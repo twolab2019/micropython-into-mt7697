@@ -35,15 +35,16 @@
 ###################################################
 # Project vairables assignment
 
-SOURCE_DIR = ../../../../..
+SOURCE_DIR = $(LINKIT_SDK_PATH)
 PWD= $(shell pwd)
-SDK_PATH    = $(abspath $(PWD)/$(SOURCE_DIR))
+SDK_PATH    = $(LINKIT_SDK_PATH)
 FEATURE = feature.mk
 include $(FEATURE)
 
 DEBUG = 0
 FLOAT_TYPE = hard
 BUILD_DIR = $(PWD)/build
+MY_BUILD_DIR = $(PWD)/build
 
 # Project name
 PROJ_NAME       = $(notdir $(abspath $(dir $(PWD))))
@@ -53,6 +54,8 @@ OUTPATH = $(PWD)/build
 C_OBJS = $(C_FILES:%.c=$(BUILD_DIR)/%.o)
 CXX_OBJS        = $(CXX_FILES:%.cpp=$(BUILD_DIR)/%.o)
 S_OBJS = $(S_FILES:%.s=$(BUILD_DIR)/%.o)
+MY_C_OBJS = $(MY_C_FILES:%.c=$(MY_BUILD_DIR)/%.o)
+MY_S_OBJS = $(MY_S_FILES:%.s=$(MY_BUILD_DIR)/%.o)
 
 # LD Flags
 LDFLAGS = $(ALLFLAGS) $(FPUFLAGS) --specs=nano.specs -lnosys -nostartfiles
@@ -134,10 +137,10 @@ ifeq ($(MTK_MINICLI_ENABLE),y)
 APP_FILES += driver/board/linkit7697_hdk/util/src/io_def.c
 endif
 
-C_FILES += $(APP_FILES)
+MY_C_FILES += $(APP_FILES)
 
 # add startup file to build
-S_FILES += $(APP_PATH)/GCC/startup_mt7687.s
+MY_S_FILES += $(APP_PATH)/GCC/startup_mt7687.s
 
 
 
@@ -145,14 +148,15 @@ S_FILES += $(APP_PATH)/GCC/startup_mt7687.s
 CFLAGS += -I$(SOURCE_DIR)/driver/chip/mt7687/inc
 CFLAGS += -I$(SOURCE_DIR)/driver/chip/inc
 CFLAGS += -I$(SOURCE_DIR)/middleware/MTK/wifi_service/combo/inc
-CFLAGS += -I$(SOURCE_DIR)/$(APP_PATH)/inc
+CFLAGS += -I$(APP_PATH)/inc
 CFLAGS += -I$(SOURCE_DIR)/driver/CMSIS/Include
 CFLAGS += -I$(SOURCE_DIR)/driver/CMSIS/Device/MTK/mt7687/Include
 CFLAGS += -I$(SOURCE_DIR)/driver/board/linkit7697_hdk/ept/inc
+CFLAGS += -I$(SOURCE_DIR)/driver/board/linkit7697_hdk/external_flash/driver/board/linkit7697_hdk/external_flash/inc
 
 # BLE include path
 CFLAGS += -D__BT_DEBUG__
-CFLAGS += -I$(SOURCE_DIR)/$(APP_PATH)/src/ut_app
+CFLAGS += -I$(APP_PATH)/src/ut_app
 CFLAGS += -I$(SOURCE_DIR)/middleware/MTK/bluetooth/inc
 
 ###################################################
@@ -177,7 +181,7 @@ include $(SOURCE_DIR)/middleware/MTK/bluetooth/module.mk
 all: cleanlog proj ; $(info $$var is [${var}])echo Hello world
 	@mkdir -p $(BUILD_DIR)
 	@$(SIZE) $(OUTPATH)/$(PROJ_NAME).elf
-	@$(SOURCE_DIR)/tools/scripts/build/copy_firmware.sh $(SOURCE_DIR) $(OUTPATH) $(IC_CONFIG) $(BOARD_CONFIG) $(PROJ_NAME).bin $(PWD)
+	@./copy_firmware.sh $(SOURCE_DIR) $(OUTPATH) $(IC_CONFIG) $(BOARD_CONFIG) $(PROJ_NAME).bin $(PWD) linkit7697_hdk
 
 MOD_EXTRA = BUILD_DIR=$(BUILD_DIR) OUTPATH=$(OUTPATH) PROJ_PATH=$(PROJ_PATH)
 
@@ -188,7 +192,7 @@ $(MODULE_PATH):
 
 proj: $(OUTPATH)/$(PROJ_NAME).elf
 
-$(OUTPATH)/$(PROJ_NAME).elf: $(C_OBJS) $(CXX_OBJS) $(S_OBJS) $(LIBS)
+$(OUTPATH)/$(PROJ_NAME).elf: $(C_OBJS) $(CXX_OBJS) $(S_OBJS) $(LIBS) $(MY_C_OBJS) $(MY_S_OBJS)
 	@echo Linking...
 	@if [ -e "$@" ]; then rm -f "$@"; fi
 	@if [ -e "$(OUTPATH)/$(PROJ_NAME).map" ]; then rm -f "$(OUTPATH)/$(PROJ_NAME).map"; fi
@@ -202,7 +206,7 @@ $(OUTPATH)/$(PROJ_NAME).elf: $(C_OBJS) $(CXX_OBJS) $(S_OBJS) $(LIBS)
 	@echo Done
 
 
-include $(SOURCE_DIR)/.rule.mk
+include ./mt7697_mpy_rule.mk
 
 clean:
 	rm -rf $(OUTPATH)
