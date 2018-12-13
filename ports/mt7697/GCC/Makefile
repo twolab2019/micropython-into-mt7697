@@ -34,10 +34,17 @@
  
 ###################################################
 # Project vairables assignment
+BUILD = $(PWD)/build
+include ../../../py/mkenv.mk
+
+# qstr definitions (must come before including py.mk)
+QSTR_DEFS = ../mpysource/qstrdefsport.h
+
 
 SOURCE_DIR = $(LINKIT_SDK_PATH)
 PWD= $(shell pwd)
 SDK_PATH    = $(LINKIT_SDK_PATH)
+
 FEATURE = feature.mk
 include $(FEATURE)
 
@@ -61,7 +68,7 @@ MY_S_OBJS = $(MY_S_FILES:%.s=$(MY_BUILD_DIR)/%.o)
 LDFLAGS = $(ALLFLAGS) $(FPUFLAGS) --specs=nano.specs -lnosys -nostartfiles
 LDFLAGS += -Wl,-wrap=malloc -Wl,-wrap=calloc -Wl,-wrap=realloc -Wl,-wrap=free
 LDFLAGS += -Wl,-Tmt7687_flash.ld -Wl,--gc-sections
-
+LD      = $(BINPATH)/arm-none-eabi-ld
 ###################################################
 # module include
 
@@ -94,11 +101,6 @@ else
 include $(SOURCE_DIR)/prebuilt/middleware/MTK/minisupp/module.mk
 endif
 
-
-
-
-
-
 ###################################################
 # Sources or Lib
 #include lwip
@@ -118,6 +120,8 @@ $(info $(SDK_PATH))
 $(info $(PROJ_PATH))
 $(info $(APP_PATH))
 APP_PATH_SRC = $(APP_PATH)/src
+APP_MP_PATH_SRC = $(APP_PATH)/mpysource
+MP_PATH_SRC := $(patsubst %/ports/mt7697,%,$(APP_PATH))
 
 APP_FILES += $(APP_PATH_SRC)/main.c
 APP_FILES += $(APP_PATH_SRC)/wifi_lwip_helper.c
@@ -133,11 +137,13 @@ APP_FILES += $(APP_PATH_SRC)/bt_hci_log_uart.c
 APP_FILES += $(APP_PATH_SRC)/bt_init.c
 APP_FILES += $(APP_PATH_SRC)/bt_common.c
 
+APP_FILES += $(APP_MP_PATH_SRC)/mphalport.c
+
 ifeq ($(MTK_MINICLI_ENABLE),y)
 APP_FILES += driver/board/linkit7697_hdk/util/src/io_def.c
 endif
 
-MY_C_FILES += $(APP_FILES)
+MY_C_FILES = $(APP_FILES)
 
 # add startup file to build
 MY_S_FILES += $(APP_PATH)/GCC/startup_mt7687.s
@@ -149,6 +155,7 @@ CFLAGS += -I$(SOURCE_DIR)/driver/chip/mt7687/inc
 CFLAGS += -I$(SOURCE_DIR)/driver/chip/inc
 CFLAGS += -I$(SOURCE_DIR)/middleware/MTK/wifi_service/combo/inc
 CFLAGS += -I$(APP_PATH)/inc
+CFLAGS += -I$(APP_PATH)/mpysource
 CFLAGS += -I$(SOURCE_DIR)/driver/CMSIS/Include
 CFLAGS += -I$(SOURCE_DIR)/driver/CMSIS/Device/MTK/mt7687/Include
 CFLAGS += -I$(SOURCE_DIR)/driver/board/linkit7697_hdk/ept/inc
@@ -160,8 +167,46 @@ CFLAGS += -I$(APP_PATH)/src/ut_app
 CFLAGS += -I$(SOURCE_DIR)/middleware/MTK/bluetooth/inc
 
 ###################################################
+# include py core make definitions
+include $(TOP)/py/py.mk
 
+INC += -I$(APP_PATH)/inc
+INC += -I$(APP_PATH)/mpysource
+INC += -I.
+INC += -I$(TOP)
+INC += -I$(BUILD)
+OBJ = $(PY_O) #$(addprefix $(BUILD)/, $(SRC_C:.c=.o))
+OBJ += $(addprefix $(BUILD)/, $(LIB_FILES:.c=.o))
+OBJ += $(addprefix $(BUILD)/, $(APP_MODS_SRC_C:.c=.o))
 
+CFLAGS += $(INC)
+
+ifneq ($(MICROPY_MODULE_FROZEN_STR),)
+endif
+ifneq ($(FROZEN_DIR),)
+# To use frozen source modules, put your .py files in a subdirectory (eg scripts/)
+# and then invoke make with FROZEN_DIR=scripts (be sure to build from scratch).
+CFLAGS += -DMICROPY_MODULE_FROZEN_STR
+endif
+
+ifneq ($(MICROPY_MODULE_FROZEN_MPY),)
+FROZEN_MPY_DIR=$(APP_PATH)/mpysource/modules
+endif
+ifneq ($(FROZEN_MPY_DIR),)
+# To use frozen bytecode, put your .py files in a subdirectory (eg frozen/) and
+# then invoke make with FROZEN_MPY_DIR=frozen (be sure to build from scratch).
+CFLAGS += -DMICROPY_QSTR_EXTRA_POOL=mp_qstr_frozen_const_pool
+endif
+
+LIB_FILES = $(addprefix $(MP_PATH_SRC)/lib/,\
+		utils/pyexec.c \
+		libc/string0.c \
+		mp-readline/readline.c \
+	)
+
+SRC_QSTR += $(APP_MODS_SRC_C) $(APP_FILES)
+
+include $(MP_PATH_SRC)/py/mkrules.mk
 ###################################################
 # Libraries
 include $(SOURCE_DIR)/project/common/bsp_ex/module.mk
@@ -192,7 +237,7 @@ $(MODULE_PATH):
 
 proj: $(OUTPATH)/$(PROJ_NAME).elf
 
-$(OUTPATH)/$(PROJ_NAME).elf: $(C_OBJS) $(CXX_OBJS) $(S_OBJS) $(LIBS) $(MY_C_OBJS) $(MY_S_OBJS)
+$(OUTPATH)/$(PROJ_NAME).elf: $(OBJ) $(C_OBJS) $(CXX_OBJS) $(S_OBJS) $(LIBS) $(MY_C_OBJS) $(MY_S_OBJS)
 	@echo Linking...
 	@if [ -e "$@" ]; then rm -f "$@"; fi
 	@if [ -e "$(OUTPATH)/$(PROJ_NAME).map" ]; then rm -f "$(OUTPATH)/$(PROJ_NAME).map"; fi
@@ -204,7 +249,6 @@ $(OUTPATH)/$(PROJ_NAME).elf: $(C_OBJS) $(CXX_OBJS) $(S_OBJS) $(LIBS) $(MY_C_OBJS
 	@$(OBJCOPY) -O ihex $(OUTPATH)/$(PROJ_NAME).elf $(OUTPATH)/$(PROJ_NAME).hex
 	@$(OBJCOPY) -O binary $(OUTPATH)/$(PROJ_NAME).elf $(OUTPATH)/$(PROJ_NAME).bin
 	@echo Done
-
 
 include ./mt7697_mpy_rule.mk
 

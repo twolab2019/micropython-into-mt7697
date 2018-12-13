@@ -44,9 +44,6 @@
 /* device.h includes */
 #include "mt7687.h"
 #include "system_mt7687.h"
-#include "top.h"
-#include "hal_pinmux_define.h"
-#include "hal_gpio.h"
 
 #include "sys_init.h"
 #include "task_def.h"
@@ -55,6 +52,18 @@
 #include "wifi_api.h"
 
 #include "bt_init.h"
+//#include "mphalport.h"
+
+#include "py/compile.h"
+#include "py/runtime.h"
+#include "py/repl.h"
+#include "py/gc.h"
+#include "py/mperrno.h"
+#include "lib/utils/pyexec.h"
+
+// -- 16k bytes for stack size of freeRTOS task--
+#define MP_TASK_STACK_SIZE    (20 * 1024)
+#define MP_TASK_STACK_LEN     (MP_TASK_STACK_SIZE / sizeof(StackType_t))
 
 /* Create the log control block as user wishes. Here we use 'template' as module name.
  * User needs to define their own log control blocks as project needs.
@@ -62,6 +71,49 @@
  */
 log_create_module(template, PRINT_LEVEL_INFO);
 
+#if MICROPY_ENABLE_COMPILER
+void do_str(const char *src, mp_parse_input_kind_t input_kind) {
+    nlr_buf_t nlr;
+    if (nlr_push(&nlr) == 0) {
+        mp_lexer_t *lex = mp_lexer_new_from_str_len(MP_QSTR__lt_stdin_gt_, src, strlen(src), 0);
+        qstr source_name = lex->source_name;
+        mp_parse_tree_t parse_tree = mp_parse(lex, input_kind);
+        mp_obj_t module_fun = mp_compile(&parse_tree, source_name, MP_EMIT_OPT_NONE, true);
+        mp_call_function_0(module_fun);
+        nlr_pop();
+    } else {
+        // uncaught exception
+        mp_obj_print_exception(&mp_plat_print, (mp_obj_t)nlr.ret_val);
+    }
+}
+#endif
+
+void mp_task(void *pvParameters)
+{
+    mp_hal_stdout_tx_str("-- mp_task --");
+    #if MICROPY_ENABLE_COMPILER
+    #if MICROPY_REPL_EVENT_DRIVEN
+    pyexec_event_repl_init();
+    for (;;) {
+        int c = mp_hal_stdin_rx_chr();
+        if (pyexec_event_repl_process_char(c)) {
+            break;
+        }
+    }
+    #else
+    pyexec_friendly_repl();
+    #endif
+    //do_str("print('hello world!', list(x+1 for x in range(10)), end='eol\\n')", MP_PARSE_SINGLE_INPUT);
+    //do_str("for i in range(10):\r\n  print(i)", MP_PARSE_FILE_INPUT);
+    #else
+        pyexec_frozen_module("frozentest.py");
+    #endif
+
+}
+
+
+static char *stack_top;
+static char heap[MP_TASK_STACK_SIZE];
 /**
 * @brief       Main function
 * @param[in]   None.
@@ -70,6 +122,8 @@ log_create_module(template, PRINT_LEVEL_INFO);
 int main(void)
 {
     /* Do system initialization, eg: hardware, nvdm and random seed. */
+    TaskHandle_t task_one = NULL;
+    BaseType_t task_res;
     system_init();
 
     /* system log initialization.
@@ -79,57 +133,62 @@ int main(void)
      * under project/mtxxxx_hdk/apps/.
      */
     log_init(NULL, NULL, NULL);
+    LOG_I(template, "start to create task. 5\n");
+   // SysInitStatus_Set();
+    int stack_dummy;
+    stack_top = (char*)&stack_dummy;
 
-    LOG_I(template, "start to create task.\n");
-
-    /* User initial the parameters for wifi initial process,  system will determin which wifi operation mode
-     * will be started , and adopt which settings for the specific mode while wifi initial process is running*/
-    wifi_config_t config = {0};
-    config.opmode = WIFI_MODE_STA_ONLY;
-    strcpy((char *)config.sta_config.ssid, (const char *)"MTK_STA");
-    strcpy((char *)config.sta_config.password, (const char *)"12345678");
-    config.sta_config.ssid_length = strlen((const char *)config.sta_config.ssid);
-    config.sta_config.password_length = strlen((const char *)config.sta_config.password);
-
-
-    /* Initialize wifi stack and register wifi init complete event handler,
-     * notes:  the wifi initial process will be implemented and finished while system task scheduler is running.*/
-    wifi_init(&config, NULL);
-
-    /* Tcpip stack and net interface initialization,  dhcp client, dhcp server process initialization*/
-    lwip_network_init(config.opmode);
-    lwip_net_start(config.opmode);
-
-    bt_create_task();
-	
-	/* As for generic HAL init APIs like: hal_uart_init(), hal_gpio_init() and hal_spi_master_init() etc,
-     * user can call them when they need, which means user can call them here or in user task at runtime.
-     */
-
-    /* Create a user task for demo when and how to use wifi config API to change WiFI settings,
-    Most WiFi APIs must be called in task scheduler, the system will work wrong if called in main(),
-    For which API must be called in task, please refer to wifi_api.h or WiFi API reference.
-    xTaskCreate(user_wifi_app_entry,
-                UNIFY_USR_DEMO_TASK_NAME,
-                UNIFY_USR_DEMO_TASK_STACKSIZE / 4,
-                NULL, UNIFY_USR_DEMO_TASK_PRIO, NULL);
-    user_wifi_app_entry is user's task entry function, which may be defined in another C file to do application job.
-    UNIFY_USR_DEMO_TASK_NAME, UNIFY_USR_DEMO_TASK_STACKSIZE and UNIFY_USR_DEMO_TASK_PRIO should be defined
-    in task_def.h. User needs to refer to example in task_def.h, then makes own task MACROs defined.
-    */
-
-
-    /* Call this function to indicate the system initialize done. */
+    #if MICROPY_ENABLE_GC
+    gc_init(heap, heap + sizeof(heap));
+    #endif
     SysInitStatus_Set();
+    mp_init();
+    task_res = xTaskCreate(
+		mp_task,
+		"mp_task",
+		MP_TASK_STACK_LEN,
+		(void *) 1,
+		TASK_PRIORITY_LOW,
+		&task_one);
 
-    /* Start the scheduler. */
+    if (task_res == pdPASS)
+        mp_hal_stdout_tx_str("\n[MP Task OK]]\n");
+    else
+        mp_hal_stdout_tx_str("\n[MP Task init failed]\n");
+
     vTaskStartScheduler();
+    mp_deinit();
+    return 0;
 
-    /* If all is well, the scheduler will now be running, and the following line
-    will never be reached.  If the following line does execute, then there was
-    insufficient FreeRTOS heap memory available for the idle and/or timer tasks
-    to be created.  See the memory management section on the FreeRTOS web site
-    for more details. */
-    for( ;; );
 }
 
+void gc_collect(void) {
+    // WARNING: This gc_collect implementation doesn't try to get root
+    // pointers from CPU registers, and thus may function incorrectly.
+    void *dummy;
+    gc_collect_start();
+    gc_collect_root(&dummy, ((mp_uint_t)stack_top - (mp_uint_t)&dummy) / sizeof(mp_uint_t));
+    gc_collect_end();
+    gc_dump_info();
+}
+
+mp_lexer_t *mp_lexer_new_from_file(const char *filename) {
+    mp_raise_OSError(MP_ENOENT);
+}
+
+mp_import_stat_t mp_import_stat(const char *path) {
+    return MP_IMPORT_STAT_NO_EXIST;
+}
+
+mp_obj_t mp_builtin_open(size_t n_args, const mp_obj_t *args, mp_map_t *kwargs) {
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_KW(mp_builtin_open_obj, 1, mp_builtin_open);
+
+void nlr_jump_fail(void *val) {
+    while (1);
+}
+
+void NORETURN __fatal_error(const char *msg) {
+    while (1);
+}
