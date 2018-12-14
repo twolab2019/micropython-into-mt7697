@@ -59,6 +59,7 @@
 #include "py/repl.h"
 #include "py/gc.h"
 #include "py/mperrno.h"
+#include "py/stackctrl.h"
 #include "lib/utils/pyexec.h"
 
 // -- 16k bytes for stack size of freeRTOS task--
@@ -114,7 +115,9 @@ void mp_task(void *pvParameters)
 
 static char *stack_top;
 static char heap[MP_TASK_STACK_SIZE];
-/**
+extern uint32_t __StackTop;
+extern uint32_t __StackLimit;
+/*
 * @brief       Main function
 * @param[in]   None.
 * @return      None.
@@ -139,7 +142,14 @@ int main(void)
     stack_top = (char*)&stack_dummy;
 
     #if MICROPY_ENABLE_GC
-    gc_init(heap, heap + sizeof(heap));
+    // Stack limit should be less than real stack size, so we have a chance
+    // to recover from limit hit.  (Limit is measured in bytes.)
+    // Note: stack control relies on main thread being initialised above
+    mp_stack_set_top(&__StackTop);
+    mp_stack_set_limit((char*)&__StackTop - (char*)&__StackLimit - 1024);
+
+    // GC init
+    gc_init(&__StackLimit, &__StackTop);
     #endif
     SysInitStatus_Set();
     mp_init();
@@ -160,16 +170,6 @@ int main(void)
     mp_deinit();
     return 0;
 
-}
-
-void gc_collect(void) {
-    // WARNING: This gc_collect implementation doesn't try to get root
-    // pointers from CPU registers, and thus may function incorrectly.
-    void *dummy;
-    gc_collect_start();
-    gc_collect_root(&dummy, ((mp_uint_t)stack_top - (mp_uint_t)&dummy) / sizeof(mp_uint_t));
-    gc_collect_end();
-    gc_dump_info();
 }
 
 mp_lexer_t *mp_lexer_new_from_file(const char *filename) {

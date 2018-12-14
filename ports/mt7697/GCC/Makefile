@@ -138,6 +138,7 @@ APP_FILES += $(APP_PATH_SRC)/bt_init.c
 APP_FILES += $(APP_PATH_SRC)/bt_common.c
 
 APP_FILES += $(APP_MP_PATH_SRC)/mphalport.c
+APP_FILES += $(APP_MP_PATH_SRC)/gccollect.c
 
 ifeq ($(MTK_MINICLI_ENABLE),y)
 APP_FILES += driver/board/linkit7697_hdk/util/src/io_def.c
@@ -147,7 +148,7 @@ MY_C_FILES = $(APP_FILES)
 
 # add startup file to build
 MY_S_FILES += $(APP_PATH)/GCC/startup_mt7687.s
-
+MY_S_FILES += $(APP_MP_PATH_SRC)/gchelper.s
 
 
 # include path
