@@ -201,6 +201,7 @@ endif
 
 LIB_FILES = $(addprefix $(MP_PATH_SRC)/lib/,\
 		utils/pyexec.c \
+		utils/interrupt_char.c \
 		libc/string0.c \
 		mp-readline/readline.c \
 	)

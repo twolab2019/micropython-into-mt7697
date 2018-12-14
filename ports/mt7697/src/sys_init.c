@@ -52,6 +52,7 @@
 #include "sys_init.h"
 #include "bsp_gpio_ept_config.h"
 #include "flash_map.h"
+#include "mphalport.h"
 
 /* Enable NVDM feature */
 #ifdef MTK_NVDM_ENABLE
@@ -158,6 +159,7 @@ static void prvSetupHardware(void)
      * bsp_ept_gpio_setting_init() for GPIO pinumux setup.
      */
     bsp_ept_gpio_setting_init();
+	hw_uart_init();
 
     /* low power init */
 #if configUSE_TICKLESS_IDLE == 2
