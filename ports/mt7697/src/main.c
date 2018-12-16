@@ -134,7 +134,13 @@ int main(void)
     gc_init(&__StackLimit, &__StackTop);
     #endif
     SysInitStatus_Set();
+
+    // MicroPython init
     mp_init();
+    mp_obj_list_init(MP_OBJ_TO_PTR(mp_sys_path), 0);
+    mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR_)); // current dir (or base dir of the script)
+    readline_init0();
+
     task_res = xTaskCreate(
 		mp_task,
 		"mp_task",
