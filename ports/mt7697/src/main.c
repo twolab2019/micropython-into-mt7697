@@ -52,6 +52,7 @@
 #include "wifi_api.h"
 
 #include "bt_init.h"
+#include "storage.h"
 //#include "mphalport.h"
 
 #include "py/compile.h"
@@ -62,6 +63,13 @@
 #include "py/stackctrl.h"
 #include "lib/utils/pyexec.h"
 
+// -- fs fat
+#include "extmod/vfs.h"
+#include "extmod/vfs_fat.h"
+#include "storage.h"
+
+fs_user_mount_t fs_user_mount_flash;
+
 // -- 16k bytes for stack size of freeRTOS task--
 #define MP_TASK_STACK_SIZE    (20 * 1024)
 #define MP_TASK_STACK_LEN     (MP_TASK_STACK_SIZE / sizeof(StackType_t))
@@ -71,6 +79,117 @@
  * Please refer to the log dev guide under /doc folder for more details.
  */
 log_create_module(template, PRINT_LEVEL_INFO);
+
+#if MICROPY_HW_ENABLE_STORAGE
+static const char fresh_boot_py[] =
+"# boot.py -- run on boot-up\r\n"
+"# can run arbitrary Python, but best to keep it minimal\r\n"
+"\r\n"
+#if MICROPY_HW_ENABLE_USB
+"#pyb.usb_mode('VCP+MSC') # act as a serial and a storage device\r\n"
+"#pyb.usb_mode('VCP+HID') # act as a serial device and a mouse\r\n"
+#endif
+;
+
+static const char fresh_main_py[] =
+"# main.py -- put your code here!\r\n"
+;
+
+static const char fresh_readme_txt[] =
+"This is a Liniit 7697 HDK board with MicroPython.\r\n"
+" Author : onionys@gmail.com and tomlin690@gmail.com\r\n"
+"\r\n"
+"You can get started right away by writing your Python code in 'main.py'.\r\n"
+"\r\n"
+;
+
+// avoid inlining to avoid stack usage within main()
+MP_NOINLINE STATIC bool init_flash_fs(uint reset_mode) {
+    // init the vfs object
+	LOG_I(template, "[fs init][mode][%d]", reset_mode);
+    fs_user_mount_t *vfs_fat = &fs_user_mount_flash;
+    vfs_fat->flags = 0;
+    pyb_flash_init_vfs(vfs_fat);
+	LOG_I(template, "[fs mount]");
+
+    // try to mount the flash
+    FRESULT res = f_mount(&vfs_fat->fatfs);
+
+    if (reset_mode == 3 || res == FR_NO_FILESYSTEM) {
+        // no filesystem, or asked to reset it, so create a fresh one
+        LOG_I(template, "[fs][fs not found!]");
+
+        uint8_t working_buf[_MAX_SS];
+        LOG_I(template, "[fs][low level operation][mkfs]");
+        res = f_mkfs(&vfs_fat->fatfs, FM_FAT, 0, working_buf, sizeof(working_buf));
+        if (res == FR_OK) {
+            // success creating fresh LFS
+			printf("[fs][success create frsh LFS]\r\n");
+        } else {
+            printf("PYB: can't create flash filesystem\n");
+            return false;
+        }
+
+        // set label
+        f_setlabel(&vfs_fat->fatfs, MICROPY_HW_FLASH_FS_LABEL);
+
+        // create empty main.py
+        FIL fp;
+        f_open(&vfs_fat->fatfs, &fp, "/main.py", FA_WRITE | FA_CREATE_ALWAYS);
+        UINT n;
+        f_write(&fp, fresh_main_py, sizeof(fresh_main_py) - 1 /* don't count null terminator */, &n);
+        // TODO check we could write n bytes
+        f_close(&fp);
+		LOG_I(template, "[fs file][create main.py]");
+
+        // create readme file
+        f_open(&vfs_fat->fatfs, &fp, "/README.txt", FA_WRITE | FA_CREATE_ALWAYS);
+        f_write(&fp, fresh_readme_txt, sizeof(fresh_readme_txt) - 1 /* don't count null terminator */, &n);
+        f_close(&fp);
+		LOG_I(template, "[fs file][create README]");
+    } else if (res == FR_OK) {
+        // mount sucessful
+		printf("[fs][mount ok!]\r\n");
+    } else {
+    fail:
+        printf("PYB: can't mount flash\n");
+        return false;
+    }
+
+    // mount the flash device (there should be no other devices mounted at this point)
+    // we allocate this structure on the heap because vfs->next is a root pointer
+    mp_vfs_mount_t *vfs = m_new_obj_maybe(mp_vfs_mount_t);
+    if (vfs == NULL) {
+		LOG_I(template, "[vfs fail]");
+        goto fail;
+    }
+    vfs->str = "/flash";
+    vfs->len = 6;
+    vfs->obj = MP_OBJ_FROM_PTR(vfs_fat);
+    vfs->next = NULL;
+    MP_STATE_VM(vfs_mount_table) = vfs;
+
+    // The current directory is used as the boot up directory.
+    // It is set to the internal flash filesystem by default.
+    MP_STATE_PORT(vfs_cur) = vfs;
+
+    // Make sure we have a /flash/boot.py.  Create it if needed.
+    FILINFO fno;
+    res = f_stat(&vfs_fat->fatfs, "/boot.py", &fno);
+    if (res != FR_OK) {
+        // doesn't exist, create fresh file
+		LOG_I(template, "[fs file][create /boot.py]");
+        FIL fp;
+        f_open(&vfs_fat->fatfs, &fp, "/boot.py", FA_WRITE | FA_CREATE_ALWAYS);
+        UINT n;
+        f_write(&fp, fresh_boot_py, sizeof(fresh_boot_py) - 1 /* don't count null terminator */, &n);
+        // TODO check we could write n bytes
+        f_close(&fp);
+    }
+
+    return true;
+}
+#endif
 
 void mp_task(void *pvParameters)
 {
@@ -123,7 +242,12 @@ int main(void)
     int stack_dummy;
     stack_top = (char*)&stack_dummy;
 
+    #if MICROPY_HW_ENABLE_STORAGE
+    storage_init();
+    #endif
+
     #if MICROPY_ENABLE_GC
+
     // Stack limit should be less than real stack size, so we have a chance
     // to recover from limit hit.  (Limit is measured in bytes.)
     // Note: stack control relies on main thread being initialised above
@@ -141,6 +265,14 @@ int main(void)
     mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR_)); // current dir (or base dir of the script)
     readline_init0();
 
+    // Initialise the local flash filesystem.
+    // Create it if needed, mount in on /flash, and set it as current dir.
+    bool mounted_flash = false;
+    #if MICROPY_HW_ENABLE_STORAGE
+	uint reset_mode = 0;
+    mounted_flash = init_flash_fs(reset_mode);
+    #endif
+
     task_res = xTaskCreate(
 		mp_task,
 		"mp_task",
@@ -150,7 +282,7 @@ int main(void)
 		&task_one);
 
     if (task_res == pdPASS)
-        mp_hal_stdout_tx_str("\n[MP Task OK]]\n");
+        mp_hal_stdout_tx_str("\n[MP Task OK]\n");
     else
         mp_hal_stdout_tx_str("\n[MP Task init failed]\n");
 
@@ -159,19 +291,6 @@ int main(void)
     return 0;
 
 }
-
-mp_lexer_t *mp_lexer_new_from_file(const char *filename) {
-    mp_raise_OSError(MP_ENOENT);
-}
-
-mp_import_stat_t mp_import_stat(const char *path) {
-    return MP_IMPORT_STAT_NO_EXIST;
-}
-
-mp_obj_t mp_builtin_open(size_t n_args, const mp_obj_t *args, mp_map_t *kwargs) {
-    return mp_const_none;
-}
-MP_DEFINE_CONST_FUN_OBJ_KW(mp_builtin_open_obj, 1, mp_builtin_open);
 
 void nlr_jump_fail(void *val) {
     while (1);

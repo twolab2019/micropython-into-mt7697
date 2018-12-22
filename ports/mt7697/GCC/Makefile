@@ -139,6 +139,9 @@ APP_FILES += $(APP_PATH_SRC)/bt_common.c
 
 APP_FILES += $(APP_MP_PATH_SRC)/mphalport.c
 APP_FILES += $(APP_MP_PATH_SRC)/gccollect.c
+APP_FILES += $(APP_MP_PATH_SRC)/storage.c
+APP_FILES += $(APP_MP_PATH_SRC)/flashbdev.c
+APP_FILES += $(APP_MP_PATH_SRC)/fatfs_port.c
 
 ifeq ($(MTK_MINICLI_ENABLE),y)
 APP_FILES += driver/board/linkit7697_hdk/util/src/io_def.c
@@ -170,6 +173,7 @@ CFLAGS += -I$(SOURCE_DIR)/middleware/MTK/bluetooth/inc
 ###################################################
 # include py core make definitions
 include $(TOP)/py/py.mk
+CFLAGS += $(CFLAGS_MOD)
 
 INC += -I$(APP_PATH)/inc
 INC += -I$(APP_PATH)/mpysource
@@ -177,7 +181,8 @@ INC += -I.
 INC += -I$(TOP)
 INC += -I$(BUILD)
 OBJ = $(PY_O) #$(addprefix $(BUILD)/, $(SRC_C:.c=.o))
-OBJ += $(addprefix $(BUILD)/, $(LIB_FILES:.c=.o))
+OBJ += $(addprefix $(BUILD)/, $(SRC_LIB:.c=.o))
+#OBJ += $(addprefix $(BUILD)/, $(LIB_FILES:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(APP_MODS_SRC_C:.c=.o))
 
 CFLAGS += $(INC)
@@ -199,14 +204,37 @@ ifneq ($(FROZEN_MPY_DIR),)
 CFLAGS += -DMICROPY_QSTR_EXTRA_POOL=mp_qstr_frozen_const_pool
 endif
 
-LIB_FILES = $(addprefix $(MP_PATH_SRC)/lib/,\
-		utils/pyexec.c \
-		utils/interrupt_char.c \
-		libc/string0.c \
-		mp-readline/readline.c \
+
+SRC_LIB = $(addprefix lib/,\
+	libc/string0.c \
+	oofatfs/ff.c \
+	oofatfs/option/unicode.c \
+	mp-readline/readline.c \
+	netutils/netutils.c \
+	timeutils/timeutils.c \
+	utils/pyexec.c \
+	utils/interrupt_char.c \
+	utils/sys_stdio_mphal.c \
 	)
 
-SRC_QSTR += $(APP_MODS_SRC_C) $(APP_FILES)
+#LIB_FILES = $(addprefix $(MP_PATH_SRC)/lib/,\
+	libc/string0.c \
+	oofatfs/ff.c \
+	oofatfs/option/unicode.c \
+	mp-readline/readline.c \
+	netutils/netutils.c \
+	timeutils/timeutils.c \
+	utils/pyexec.c \
+	utils/interrupt_char.c \
+	utils/sys_stdio_mphal.c \
+	)
+#		utils/pyexec.c \
+#		utils/interrupt_char.c \
+#		libc/string0.c \
+#		mp-readline/readline.c \
+#)
+
+SRC_QSTR += $(APP_MODS_SRC_C) $(APP_FILES) $(SRC_LIB)
 
 include $(MP_PATH_SRC)/py/mkrules.mk
 ###################################################

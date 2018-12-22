@@ -8,7 +8,8 @@ MEMORY
 	ROM_BL          (arx) : ORIGIN = 0x10000000,    LENGTH = 0x00008000 /* 32k  */
 	RESERVED        (ar)  : ORIGIN = 0x10008000,    LENGTH = 0x00008000 /* 32k  */
 	N9_CODE         (ar)  : ORIGIN = 0x10010000,    LENGTH = 0x00069000 /* 420k */
-	XIP_CODE        (arx) : ORIGIN = 0x10079000,    LENGTH = 0x001ED000 /* 1972k */
+	XIP_CODE        (arx) : ORIGIN = 0x10079000,    LENGTH = 0x00187000 /* 1972k --> 1564k */
+	FLASH_FS        (arx) : ORIGIN = 0x10200000,    LENGTH = 0x00066000 /* 0k    -->  408k */
 	ROM_FOTA        (ar)  : ORIGIN = 0x10266000,    LENGTH = 0x0018A000 /* 1576k */
 	ROM_NVDM        (ar)  : ORIGIN = 0x103F0000,    LENGTH = 0x00010000 /* 64k  */
 	TCMRAM          (arw) : ORIGIN = 0x00100000,	LENGTH = 0x00010000 /* 64k  */
@@ -138,3 +139,6 @@ SECTIONS
     ASSERT(__StackLimit >= __bss_end__, "region RAM overflowed with stack")
 
 }
+
+_flash_fs_start = ORIGIN(FLASH_FS);
+_flash_fs_end   = ORIGIN(FLASH_FS) + LENGTH(FLASH_FS);

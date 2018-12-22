@@ -38,7 +38,8 @@
 #define LOADER_LENGTH           0x8000        /*  32KB */
 #define RESERVED_LENGTH         0x8000        /*  32KB */
 #define N9_RAMCODE_LENGTH       0x69000       /* 420KB */
-#define CM4_CODE_LENGTH         0x1ED000      /* 1972KB */
+#define CM4_CODE_LENGTH         0x00187000    /* 1564KB */
+#define FLASH_FS_LENGTH         0x00066000    /*  408k */
 #define FOTA_LENGTH             0x18A000      /* 1576KB */
 #define NVDM_LENGTH             0x10000       /*  64KB */
 
@@ -46,13 +47,21 @@
 #define RESERVED_BASE           (LOADER_BASE     + LOADER_LENGTH)
 #define N9_RAMCODE_BASE         (RESERVED_BASE   + RESERVED_LENGTH)
 #define CM4_CODE_BASE           (N9_RAMCODE_BASE + N9_RAMCODE_LENGTH)
-#define FOTA_BASE               (CM4_CODE_BASE   + CM4_CODE_LENGTH)
+#define FLASH_FS_BASE           (CM4_CODE_BASE   + CM4_CODE_LENGTH)
+#define FOTA_BASE               (FLASH_FS_BASE   + FLASH_FS_LENGTH)
 #define NVDM_BASE               (FOTA_BASE       + FOTA_LENGTH)
 
 #define FLASH_BASE		        0x10000000
 
 #define TCM_BASE                0x00100000
 #define TCM_LENGTH              0x00010000  /* 64kB */
+
+// -- FLASH FS about depeinding on mt7687_flash_fs.ld
+#define HAL_FLASH_FS_START          0x00200000
+#define HAL_FLASH_FS_LENGTH         FLASH_FS_LENGTH
+#define HAL_FLASH_FS_END            HAL_FLASH_FS_START + FLASH_FS_LENGTH
+// #define HAL_CACHE_FLASH_FS_START    ( HAL_FLASH_FS_START + FLASH_BASE )
+// #define HAL_CACHE_FLASH_FS_LENGTH   ( 0x00066000 )    // 408k
 
 #endif // __FLASH_MAP_H__
 
