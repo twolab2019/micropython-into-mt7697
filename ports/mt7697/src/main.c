@@ -74,6 +74,11 @@ fs_user_mount_t fs_user_mount_flash;
 #define MP_TASK_STACK_SIZE    (20 * 1024)
 #define MP_TASK_STACK_LEN     (MP_TASK_STACK_SIZE / sizeof(StackType_t))
 
+static char heap[50*1024];
+static char *stack_top;
+extern uint32_t __StackTop;
+extern uint32_t __StackLimit;
+
 /* Create the log control block as user wishes. Here we use 'template' as module name.
  * User needs to define their own log control blocks as project needs.
  * Please refer to the log dev guide under /doc folder for more details.
@@ -193,54 +198,6 @@ MP_NOINLINE STATIC bool init_flash_fs(uint reset_mode) {
 
 void mp_task(void *pvParameters)
 {
-    mp_hal_stdout_tx_str("-- mp_task --");
-    #if MICROPY_ENABLE_COMPILER
-    #if MICROPY_REPL_EVENT_DRIVEN
-    pyexec_event_repl_init();
-    for (;;) {
-        int c = mp_hal_stdin_rx_chr();
-        if (pyexec_event_repl_process_char(c)) {
-            break;
-        }
-    }
-    #else
-    pyexec_friendly_repl();
-    #endif
-
-    #else
-        pyexec_frozen_module("frozentest.py");
-    #endif
-
-}
-
-
-static char *stack_top;
-static char heap[50*1024];
-extern uint32_t __StackTop;
-extern uint32_t __StackLimit;
-/*
-* @brief       Main function
-* @param[in]   None.
-* @return      None.
-*/
-int main(void)
-{
-    /* Do system initialization, eg: hardware, nvdm and random seed. */
-    TaskHandle_t task_one = NULL;
-    BaseType_t task_res;
-    system_init();
-
-    /* system log initialization.
-     * This is the simplest way to initialize system log, that just inputs three NULLs
-     * as input arguments. User can use advanved feature of system log along with NVDM.
-     * For more details, please refer to the log dev guide under /doc folder or projects
-     * under project/mtxxxx_hdk/apps/.
-     */
-    log_init(NULL, NULL, NULL);
-    LOG_I(template, "start to create task. 5\n");
-   // SysInitStatus_Set();
-    int stack_dummy;
-    stack_top = (char*)&stack_dummy;
 
     #if MICROPY_HW_ENABLE_STORAGE
     storage_init();
@@ -273,6 +230,50 @@ int main(void)
     mounted_flash = init_flash_fs(reset_mode);
     #endif
 
+    mp_hal_stdout_tx_str("-- mp_task --");
+    #if MICROPY_ENABLE_COMPILER
+    #if MICROPY_REPL_EVENT_DRIVEN
+    pyexec_event_repl_init();
+    for (;;) {
+        int c = mp_hal_stdin_rx_chr();
+        if (pyexec_event_repl_process_char(c)) {
+            break;
+        }
+    }
+    #else
+    pyexec_friendly_repl();
+    #endif
+
+    #else
+        pyexec_frozen_module("frozentest.py");
+    #endif
+
+}
+
+
+/*
+* @brief       Main function
+* @param[in]   None.
+* @return      None.
+*/
+int main(void)
+{
+    /* Do system initialization, eg: hardware, nvdm and random seed. */
+    TaskHandle_t task_one = NULL;
+    BaseType_t task_res;
+    system_init();
+
+    /* system log initialization.
+     * This is the simplest way to initialize system log, that just inputs three NULLs
+     * as input arguments. User can use advanved feature of system log along with NVDM.
+     * For more details, please refer to the log dev guide under /doc folder or projects
+     * under project/mtxxxx_hdk/apps/.
+     */
+    log_init(NULL, NULL, NULL);
+    LOG_I(template, "start to create task. 5\n");
+   // SysInitStatus_Set();
+    int stack_dummy;
+    stack_top = (char*)&stack_dummy;
     task_res = xTaskCreate(
 		mp_task,
 		"mp_task",
