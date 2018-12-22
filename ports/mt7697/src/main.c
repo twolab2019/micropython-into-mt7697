@@ -215,7 +215,7 @@ void mp_task(void *pvParameters)
 
 
 static char *stack_top;
-static char heap[MP_TASK_STACK_SIZE];
+static char heap[50*1024];
 extern uint32_t __StackTop;
 extern uint32_t __StackLimit;
 /*
@@ -255,7 +255,7 @@ int main(void)
     mp_stack_set_limit((char*)&__StackTop - (char*)&__StackLimit - 1024);
 
     // GC init
-    gc_init(&__StackLimit, &__StackTop);
+    gc_init(heap, heap + sizeof(heap));
     #endif
     SysInitStatus_Set();
 
