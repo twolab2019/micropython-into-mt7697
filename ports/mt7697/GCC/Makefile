@@ -182,7 +182,6 @@ INC += -I$(TOP)
 INC += -I$(BUILD)
 OBJ = $(PY_O) #$(addprefix $(BUILD)/, $(SRC_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_LIB:.c=.o))
-#OBJ += $(addprefix $(BUILD)/, $(LIB_FILES:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(APP_MODS_SRC_C:.c=.o))
 
 CFLAGS += $(INC)
@@ -216,23 +215,6 @@ SRC_LIB = $(addprefix lib/,\
 	utils/interrupt_char.c \
 	utils/sys_stdio_mphal.c \
 	)
-
-#LIB_FILES = $(addprefix $(MP_PATH_SRC)/lib/,\
-	libc/string0.c \
-	oofatfs/ff.c \
-	oofatfs/option/unicode.c \
-	mp-readline/readline.c \
-	netutils/netutils.c \
-	timeutils/timeutils.c \
-	utils/pyexec.c \
-	utils/interrupt_char.c \
-	utils/sys_stdio_mphal.c \
-	)
-#		utils/pyexec.c \
-#		utils/interrupt_char.c \
-#		libc/string0.c \
-#		mp-readline/readline.c \
-#)
 
 SRC_QSTR += $(APP_MODS_SRC_C) $(APP_FILES) $(SRC_LIB)
 
