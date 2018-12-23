@@ -137,11 +137,14 @@ APP_FILES += $(APP_PATH_SRC)/bt_hci_log_uart.c
 APP_FILES += $(APP_PATH_SRC)/bt_init.c
 APP_FILES += $(APP_PATH_SRC)/bt_common.c
 
-APP_FILES += $(APP_MP_PATH_SRC)/mphalport.c
-APP_FILES += $(APP_MP_PATH_SRC)/gccollect.c
-APP_FILES += $(APP_MP_PATH_SRC)/storage.c
-APP_FILES += $(APP_MP_PATH_SRC)/flashbdev.c
-APP_FILES += $(APP_MP_PATH_SRC)/fatfs_port.c
+APP_FILES += $(addprefix $(APP_MP_PATH_SRC)/,\
+			 mphalport.c \
+			 gccollect.c \
+			 storage.c \
+			 flashbdev.c \
+			 fatfs_port.c \
+			 moduos.c \
+			 )
 
 ifeq ($(MTK_MINICLI_ENABLE),y)
 APP_FILES += driver/board/linkit7697_hdk/util/src/io_def.c

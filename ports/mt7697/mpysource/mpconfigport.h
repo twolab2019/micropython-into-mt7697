@@ -46,13 +46,14 @@
 #define MICROPY_PY___FILE__         (0)
 #define MICROPY_PY_GC               (1)
 #define MICROPY_PY_ARRAY            (1)
-#define MICROPY_PY_ATTRTUPLE        (0)
+#define MICROPY_PY_ATTRTUPLE        (1)
 #define MICROPY_PY_COLLECTIONS      (0)
 #define MICROPY_PY_MATH             (0)
 #define MICROPY_PY_CMATH            (0)
 #define MICROPY_PY_IO               (0)
 #define MICROPY_PY_STRUCT           (0)
 #define MICROPY_PY_SYS              (0)
+#define MICROPY_PY_OS_DUPTERM       (0)
 #define MICROPY_MODULE_FROZEN_MPY   (0)
 #define MICROPY_CPYTHON_COMPAT      (0)
 #define MICROPY_LONGINT_IMPL        (MICROPY_LONGINT_IMPL_MPZ)
@@ -96,6 +97,9 @@ typedef unsigned mp_uint_t; // must be pointer size
 
 typedef long mp_off_t;
 
+// extra built in modules to add to the list of known ones
+extern const struct _mp_obj_module_t mp_module_uos;
+
 #define MP_PLAT_PRINT_STRN(str, len) mp_hal_stdout_tx_strn_cooked(str, len)
 
 #include "FreeRTOS.h"
@@ -124,8 +128,10 @@ typedef long mp_off_t;
 // We need to provide a declaration/definition of alloca()
 #include <alloca.h>
 
-#define MICROPY_HW_BOARD_NAME "linkit"
-#define MICROPY_HW_MCU_NAME "mt7697"
+// board specifics
+#define MICROPY_HW_BOARD_NAME "MT7697 module"
+#define MICROPY_HW_MCU_NAME "MT7697"
+#define MICROPY_PY_SYS_PLATFORM "mt7697"
 
 #ifdef __linux__
 #define MICROPY_MIN_USE_STDOUT (1)
@@ -140,3 +146,9 @@ typedef long mp_off_t;
 
 #define MICROPY_PORT_ROOT_POINTERS \
     const char *readline_hist[8];
+
+
+#define MICROPY_PORT_BUILTIN_MODULES \
+    { MP_ROM_QSTR(MP_QSTR_uos), MP_ROM_PTR(&mp_module_uos) }, \
+
+
