@@ -83,9 +83,9 @@
 #define MICROPY_PY_ARRAY_SLICE_ASSIGN (0)
 #define MICROPY_PY_COLLECTIONS_DEQUE (0)
 #define MICROPY_PY_COLLECTIONS_ORDEREDDICT (0)
-#define MICROPY_PY_MATH_SPECIAL_FUNCTIONS (0)
-#define MICROPY_PY_MATH_FACTORIAL   (0)
-#define MICROPY_PY_CMATH            (0)
+#define MICROPY_PY_MATH_SPECIAL_FUNCTIONS (1)
+#define MICROPY_PY_MATH_FACTORIAL   (1)
+#define MICROPY_PY_CMATH            (1)
 #define MICROPY_PY_IO               (0)
 #define MICROPY_PY_IO_IOBASE        (0)
 #define MICROPY_PY_IO_FILEIO        (MICROPY_VFS_FAT) // because mp_type_fileio/textio point to fatfs impl
