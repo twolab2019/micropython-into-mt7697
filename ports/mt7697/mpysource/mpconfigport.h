@@ -89,10 +89,10 @@
 #define MICROPY_PY_IO               (0)
 #define MICROPY_PY_IO_IOBASE        (0)
 #define MICROPY_PY_IO_FILEIO        (MICROPY_VFS_FAT) // because mp_type_fileio/textio point to fatfs impl
-#define MICROPY_PY_SYS_MAXSIZE      (0)
-#define MICROPY_PY_SYS_EXIT         (0)
-#define MICROPY_PY_SYS_STDFILES     (0)
-#define MICROPY_PY_SYS_STDIO_BUFFER (0)
+#define MICROPY_PY_SYS_MAXSIZE      (1)
+#define MICROPY_PY_SYS_EXIT         (1)
+#define MICROPY_PY_SYS_STDFILES     (1)
+#define MICROPY_PY_SYS_STDIO_BUFFER (1)
 #define MICROPY_PY_UERRNO           (0)
 #ifndef MICROPY_PY_THREAD
 #define MICROPY_PY_THREAD           (0)
@@ -159,6 +159,9 @@
 // different targets may be defined in different ways - either as int
 // or as long. This requires different printf formatting specifiers
 // to print such value. So, we avoid int32_t and use int directly.
+
+// type definitions for the specific machine
+#define MP_SSIZE_MAX (0x7fffffff)
 #define UINT_FMT "%u"
 #define INT_FMT "%d"
 typedef int mp_int_t; // must be pointer size
