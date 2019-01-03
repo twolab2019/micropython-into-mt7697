@@ -144,6 +144,9 @@ APP_FILES += $(addprefix $(APP_MP_PATH_SRC)/,\
 			 flashbdev.c \
 			 fatfs_port.c \
 			 moduos.c \
+			 uart.c \
+			 machine_uart.c \
+			 modmachine.c \
 			 )
 
 ifeq ($(MTK_MINICLI_ENABLE),y)

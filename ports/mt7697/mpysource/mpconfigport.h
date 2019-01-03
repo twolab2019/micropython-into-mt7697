@@ -113,8 +113,8 @@
 #define MICROPY_PY_UTIMEQ           (0)
 #define MICROPY_PY_UTIME_MP_HAL     (0)
 #define MICROPY_PY_OS_DUPTERM       (0)
-#define MICROPY_PY_MACHINE          (0)
-#define MICROPY_PY_MACHINE_PULSE    (0)
+#define MICROPY_PY_MACHINE          (1)
+#define MICROPY_PY_MACHINE_PULSE    (1)
 #define MICROPY_PY_MACHINE_PIN_MAKE_NEW mp_pin_make_new
 #define MICROPY_PY_MACHINE_I2C      (0)
 #if MICROPY_HW_ENABLE_HW_I2C
@@ -170,6 +170,7 @@ typedef unsigned mp_uint_t; // must be pointer size
 typedef long mp_off_t;
 
 // extra built in modules to add to the list of known ones
+extern const struct _mp_obj_module_t machine_module;
 extern const struct _mp_obj_module_t mp_module_uos;
 
 #define MP_PLAT_PRINT_STRN(str, len) mp_hal_stdout_tx_strn_cooked(str, len)
@@ -217,10 +218,23 @@ extern const struct _mp_obj_module_t mp_module_uos;
 #define MP_STATE_PORT MP_STATE_VM
 
 #define MICROPY_PORT_ROOT_POINTERS \
-    const char *readline_hist[8];
+    const char *readline_hist[8]; \
+    \
+    /* pointers to all UART objects (if they have been created) */ \
+    struct _pyb_uart_obj_t *pyb_uart_obj_all[MICROPY_HW_MAX_UART]; \
 
 
 #define MICROPY_PORT_BUILTIN_MODULES \
+    { MP_ROM_QSTR(MP_QSTR_umachine), MP_ROM_PTR(&machine_module) }, \
     { MP_ROM_QSTR(MP_QSTR_uos), MP_ROM_PTR(&mp_module_uos) }, \
+
+
+#define MICROPY_PORT_BUILTIN_MODULE_WEAK_LINKS \
+    { MP_ROM_QSTR(MP_QSTR_machine), MP_ROM_PTR(&machine_module) }, \
+
+// extra constants
+#define MICROPY_PORT_CONSTANTS \
+    { MP_ROM_QSTR(MP_QSTR_umachine), MP_ROM_PTR(&machine_module) }, \
+    { MP_ROM_QSTR(MP_QSTR_machine), MP_ROM_PTR(&machine_module) }, \
 
 
