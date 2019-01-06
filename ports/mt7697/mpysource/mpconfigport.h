@@ -83,16 +83,16 @@
 #define MICROPY_PY_ARRAY_SLICE_ASSIGN (0)
 #define MICROPY_PY_COLLECTIONS_DEQUE (0)
 #define MICROPY_PY_COLLECTIONS_ORDEREDDICT (0)
-#define MICROPY_PY_MATH_SPECIAL_FUNCTIONS (0)
-#define MICROPY_PY_MATH_FACTORIAL   (0)
-#define MICROPY_PY_CMATH            (0)
+#define MICROPY_PY_MATH_SPECIAL_FUNCTIONS (1)
+#define MICROPY_PY_MATH_FACTORIAL   (1)
+#define MICROPY_PY_CMATH            (1)
 #define MICROPY_PY_IO               (0)
 #define MICROPY_PY_IO_IOBASE        (0)
 #define MICROPY_PY_IO_FILEIO        (MICROPY_VFS_FAT) // because mp_type_fileio/textio point to fatfs impl
-#define MICROPY_PY_SYS_MAXSIZE      (0)
-#define MICROPY_PY_SYS_EXIT         (0)
-#define MICROPY_PY_SYS_STDFILES     (0)
-#define MICROPY_PY_SYS_STDIO_BUFFER (0)
+#define MICROPY_PY_SYS_MAXSIZE      (1)
+#define MICROPY_PY_SYS_EXIT         (1)
+#define MICROPY_PY_SYS_STDFILES     (1)
+#define MICROPY_PY_SYS_STDIO_BUFFER (1)
 #define MICROPY_PY_UERRNO           (0)
 #ifndef MICROPY_PY_THREAD
 #define MICROPY_PY_THREAD           (0)
@@ -113,8 +113,8 @@
 #define MICROPY_PY_UTIMEQ           (0)
 #define MICROPY_PY_UTIME_MP_HAL     (0)
 #define MICROPY_PY_OS_DUPTERM       (0)
-#define MICROPY_PY_MACHINE          (0)
-#define MICROPY_PY_MACHINE_PULSE    (0)
+#define MICROPY_PY_MACHINE          (1)
+#define MICROPY_PY_MACHINE_PULSE    (1)
 #define MICROPY_PY_MACHINE_PIN_MAKE_NEW mp_pin_make_new
 #define MICROPY_PY_MACHINE_I2C      (1)
 #if MICROPY_HW_ENABLE_HW_I2C
@@ -159,6 +159,9 @@
 // different targets may be defined in different ways - either as int
 // or as long. This requires different printf formatting specifiers
 // to print such value. So, we avoid int32_t and use int directly.
+
+// type definitions for the specific machine
+#define MP_SSIZE_MAX (0x7fffffff)
 #define UINT_FMT "%u"
 #define INT_FMT "%d"
 typedef int mp_int_t; // must be pointer size
@@ -167,6 +170,7 @@ typedef unsigned mp_uint_t; // must be pointer size
 typedef long mp_off_t;
 
 // extra built in modules to add to the list of known ones
+extern const struct _mp_obj_module_t machine_module;
 extern const struct _mp_obj_module_t mp_module_uos;
 
 #define MP_PLAT_PRINT_STRN(str, len) mp_hal_stdout_tx_strn_cooked(str, len)
@@ -216,11 +220,23 @@ extern const struct _mp_obj_module_t mp_module_uos;
 
 #define MICROPY_PORT_ROOT_POINTERS \
 	mp_obj_t machine_irq_callback[18]; \
-    const char *readline_hist[8];
+    const char *readline_hist[8]; \
+    \
+    /* pointers to all UART objects (if they have been created) */ \
+    struct _pyb_uart_obj_t *pyb_uart_obj_all[MICROPY_HW_MAX_UART]; \
 
 
 #define MICROPY_PORT_BUILTIN_MODULES \
-    { MP_ROM_QSTR(MP_QSTR_machine), MP_ROM_PTR(&mp_module_machine) }, \
+    { MP_ROM_QSTR(MP_QSTR_umachine), MP_ROM_PTR(&machine_module) }, \
     { MP_ROM_QSTR(MP_QSTR_uos), MP_ROM_PTR(&mp_module_uos) }, \
+
+
+#define MICROPY_PORT_BUILTIN_MODULE_WEAK_LINKS \
+    { MP_ROM_QSTR(MP_QSTR_machine), MP_ROM_PTR(&machine_module) }, \
+
+// extra constants
+#define MICROPY_PORT_CONSTANTS \
+    { MP_ROM_QSTR(MP_QSTR_umachine), MP_ROM_PTR(&machine_module) }, \
+    { MP_ROM_QSTR(MP_QSTR_machine), MP_ROM_PTR(&machine_module) }, \
 
 

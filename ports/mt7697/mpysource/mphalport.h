@@ -3,7 +3,9 @@
 #include "py/mpconfig.h"
 #include "machine_pin.h"
 #include "hal.h"
+#include "py/ringbuf.h"
 
+extern ringbuf_t stdin_ringbuf;
 static inline mp_uint_t mp_hal_ticks_ms(void) { return 0; }
 
 /* GPIO function porting */
@@ -19,4 +21,5 @@ static inline mp_uint_t mp_hal_ticks_ms(void) { return 0; }
 #define mp_hal_delay_us_fast(p) hal_gpt_delay_us(p)
 
 int hw_uart_init();
+
 #endif

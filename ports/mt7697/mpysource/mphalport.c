@@ -147,3 +147,4 @@ void mp_hal_pin_od_high(mp_hal_pin_obj_t pin){
 void mp_hal_pin_open_drain(mp_hal_pin_obj_t pin){
 	hal_gpio_disable_pull(pin->gpio_num);
 }
+

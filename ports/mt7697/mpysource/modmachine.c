@@ -36,6 +36,7 @@
 #include "extmod/machine_spi.h"
 #include "extmod/machine_pulse.h"
 #include "lib/utils/pyexec.h"
+#include "uart.h"
 
 void machine_init(void){
 	;// TODO
@@ -110,12 +111,13 @@ STATIC const mp_rom_map_elem_t machine_module_globals_table[] = {
 	// { MP_ROM_QSTR(MP_QSTR_I2C) ,          MP_ROM_PTR(&machine_i2c_type) },
 	// { MP_ROM_QSTR(MP_QSTR_UART) ,         MP_ROM_PTR(&machine_uart_type) },
 
-    //{ MP_ROM_QSTR(MP_QSTR_mem8),          MP_ROM_PTR(&machine_mem8_obj) },
-    //{ MP_ROM_QSTR(MP_QSTR_mem16),         MP_ROM_PTR(&machine_mem16_obj) },
-    //{ MP_ROM_QSTR(MP_QSTR_mem32),         MP_ROM_PTR(&machine_mem32_obj) },
+    { MP_ROM_QSTR(MP_QSTR_mem8),          MP_ROM_PTR(&machine_mem8_obj) },
+    { MP_ROM_QSTR(MP_QSTR_mem16),         MP_ROM_PTR(&machine_mem16_obj) },
+    { MP_ROM_QSTR(MP_QSTR_mem32),         MP_ROM_PTR(&machine_mem32_obj) },
 
 //    { MP_ROM_QSTR(MP_QSTR_PinBase), MP_ROM_PTR(&machine_pinbase_type) },
 //    { MP_ROM_QSTR(MP_QSTR_Signal), MP_ROM_PTR(&machine_signal_type) },
+    { MP_ROM_QSTR(MP_QSTR_UART),   MP_ROM_PTR(&pyb_uart_type) },
 	/* CONSTANTS */
     // { MP_ROM_QSTR(MP_QSTR_IDLE),             MP_ROM_INT(?) },
     // { MP_ROM_QSTR(MP_QSTR_SLEEP),            MP_ROM_INT(?) },
@@ -133,7 +135,7 @@ STATIC const mp_rom_map_elem_t machine_module_globals_table[] = {
 
 STATIC MP_DEFINE_CONST_DICT(machine_module_globals, machine_module_globals_table);
 
-const mp_obj_module_t mp_module_machine = {
+const mp_obj_module_t machine_module = {
     .base = { &mp_type_module },
     .globals = (mp_obj_dict_t*)&machine_module_globals,
 };

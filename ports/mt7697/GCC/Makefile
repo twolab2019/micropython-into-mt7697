@@ -145,6 +145,8 @@ APP_FILES += $(addprefix $(APP_MP_PATH_SRC)/,\
 			 fatfs_port.c \
 			 moduos.c \
 			 machine_pin.c \
+			 uart.c \
+			 machine_uart.c \
 			 modmachine.c \
 			 )
 
