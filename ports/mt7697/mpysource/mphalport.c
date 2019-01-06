@@ -130,4 +130,20 @@ int hw_uart_init(){
 	return 0;
 }
 
+/*
+ * port for i2c
+ * CAUTION ! : 7697 output has no open-drain mode
+ * */
 
+void mp_hal_pin_od_low(mp_hal_pin_obj_t pin){
+	mp_hal_pin_write(pin,0);
+	mp_hal_pin_output(pin);
+}
+
+void mp_hal_pin_od_high(mp_hal_pin_obj_t pin){
+	mp_hal_pin_input(pin);
+}
+
+void mp_hal_pin_open_drain(mp_hal_pin_obj_t pin){
+	hal_gpio_disable_pull(pin->gpio_num);
+}
