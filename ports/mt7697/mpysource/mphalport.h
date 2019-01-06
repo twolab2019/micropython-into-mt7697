@@ -15,5 +15,8 @@ static inline mp_uint_t mp_hal_ticks_ms(void) { return 0; }
 #define mp_hal_pin_write(p,v)   _mp_hal_pin_write(p->gpio_num, v)
 #define mp_hal_get_pin_obj(o)   machine_pin_obj_from_upy_obj(o)
 
+#define MP_HAL_PIN_FMT "%u"
+#define mp_hal_delay_us_fast(p) hal_gpt_delay_us(p)
+
 int hw_uart_init();
 #endif

@@ -221,6 +221,11 @@ SRC_LIB = $(addprefix lib/,\
 	utils/sys_stdio_mphal.c \
 	)
 
+SRC_LIB += $(addprefix drivers/,\
+		   bus/softspi.c \
+		   bus/softqspi.c \
+		   )
+
 SRC_QSTR += $(APP_MODS_SRC_C) $(APP_FILES) $(SRC_LIB)
 
 include $(MP_PATH_SRC)/py/mkrules.mk
