@@ -7,6 +7,7 @@
 
 extern ringbuf_t stdin_ringbuf;
 static inline mp_uint_t mp_hal_ticks_ms(void) { return 0; }
+uint32_t get_current_millisecond(void);
 
 /* GPIO function porting */
 #define mp_hal_pin_obj_t        const machine_pin_obj_t*
@@ -19,7 +20,4 @@ static inline mp_uint_t mp_hal_ticks_ms(void) { return 0; }
 
 #define MP_HAL_PIN_FMT "%u"
 #define mp_hal_delay_us_fast(p) hal_gpt_delay_us(p)
-
-int hw_uart_init();
-
 #endif

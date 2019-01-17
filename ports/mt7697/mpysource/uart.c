@@ -57,29 +57,6 @@ static uint8_t tx_vfifo_buff[MICROPY_HW_MAX_UART][ _DMA_TX_BUF_SIZE ] \
                    __attribute__((section(".noncached_zidata")));
 static uint8_t rx_vfifo_buff[MICROPY_HW_MAX_UART][ _DMA_RX_BUF_SIZE ] \
                    __attribute__((section(".noncached_zidata")));
-/**
- * *@brief  Get the current time with the unit of millisecond.
- * *@param None.
- * *@return In this function we return current time with the unit of millisecond.
- * */
-uint32_t get_current_millisecond(void)
-{
-    hal_gpt_status_t ret;
-    uint32_t count = 0;
-    uint32_t time, time_s, time_ms;
-    ret = hal_gpt_get_free_run_count(HAL_GPT_CLOCK_SOURCE_32K, &count);
-
-    if (ret != HAL_GPT_STATUS_OK) {
-        return 0;
-    }
-
-    time_s = count / 32768;
-    time_ms = ((count % 32768) * 1000 + 16384) / 32768;
-    time = time_s * 1000 + time_ms;
-
-    return time;
-}
-
 static void _hal_uart0_callback_event(hal_uart_callback_event_t evt, void *user_data){
     if(evt == HAL_UART_EVENT_READY_TO_READ){
         uint8_t ch = 0;

@@ -19,6 +19,29 @@
 
 #define MY_UART_PORT HAL_UART_0 
 
+/**
+ * *@brief  Get the current time with the unit of millisecond.
+ * *@param None.
+ * *@return In this function we return current time with the unit of millisecond.
+ * */
+uint32_t get_current_millisecond(void)
+{
+    hal_gpt_status_t ret;
+    uint32_t count = 0;
+    uint32_t time, time_s, time_ms;
+    ret = hal_gpt_get_free_run_count(HAL_GPT_CLOCK_SOURCE_32K, &count);
+
+    if (ret != HAL_GPT_STATUS_OK) {
+        return 0;
+    }
+
+    time_s = count / 32768;
+    time_ms = ((count % 32768) * 1000 + 16384) / 32768;
+    time = time_s * 1000 + time_ms;
+
+    return time;
+}
+
 static uint8_t stdin_ringbuf_array[256];
 ringbuf_t stdin_ringbuf = {stdin_ringbuf_array, sizeof(stdin_ringbuf_array)};
 
@@ -68,69 +91,6 @@ void mp_hal_stdout_tx_strn_cooked(const char *str, size_t len){
 
 
 /*
- * config uart 
- * */
-
-#define _DMA_TX_BUF_SIZE 128
-#define _DMA_RX_BUF_SIZE 128
-static uint8_t tx_vfifo_buff[ _DMA_TX_BUF_SIZE ] __attribute__((section(".noncached_zidata")));
-static uint8_t rx_vfifo_buff[ _DMA_RX_BUF_SIZE ] __attribute__((section(".noncached_zidata")));
-static void _hal_uart_receive_callback(hal_uart_callback_event_t evt, void *user_data){
-    if(evt == HAL_UART_EVENT_READY_TO_READ){
-        uint8_t ch = 0;
-        uint8_t len = 0;
-        while(true){
-            len = hal_uart_receive_dma(HAL_UART_0, &ch, 1);
-            if(0 == len){
-                break;
-            }else if (ch == mp_interrupt_char){
-                mp_keyboard_interrupt();
-            }else{
-                ringbuf_put(&stdin_ringbuf, ch);
-            }
-        }
-    }else if (evt == HAL_UART_EVENT_READY_TO_WRITE){
-        ;// TODO WRIENT Handle!
-    }else if (evt == HAL_UART_EVENT_TRANSACTION_ERROR){
-        ;// TODO ERROR handle !
-    }else{
-        ;// TODO Unknown ERROR handle !
-    }
-}
-
-/*
- * uart init
- * */
-
-int hw_uart_init(){
-	hal_uart_config_t uart_config;
-    /* Set Pinmux to UART */
-    hal_pinmux_set_function(HAL_GPIO_0, HAL_GPIO_0_UART1_RTS_CM4);
-    hal_pinmux_set_function(HAL_GPIO_1, HAL_GPIO_1_UART1_CTS_CM4);
-    hal_pinmux_set_function(HAL_GPIO_2, HAL_GPIO_2_UART1_RX_CM4);
-    hal_pinmux_set_function(HAL_GPIO_3, HAL_GPIO_3_UART1_TX_CM4);
-
-    uart_config.baudrate = HAL_UART_BAUDRATE_115200;
-    uart_config.word_length = HAL_UART_WORD_LENGTH_8;
-    uart_config.stop_bit = HAL_UART_STOP_BIT_1;
-    uart_config.parity = HAL_UART_PARITY_NONE;
-    hal_uart_init(HAL_UART_0, &uart_config);
-	hal_uart_dma_config_t dma_config;
-
-    dma_config.receive_vfifo_alert_size = 50;
-    dma_config.receive_vfifo_buffer = rx_vfifo_buff;
-    dma_config.receive_vfifo_buffer_size = _DMA_RX_BUF_SIZE;
-    dma_config.receive_vfifo_threshold_size = 32;
-
-    dma_config.send_vfifo_buffer = tx_vfifo_buff;
-    dma_config.send_vfifo_buffer_size = _DMA_TX_BUF_SIZE;
-    dma_config.send_vfifo_threshold_size = 32;
-    hal_uart_set_dma(HAL_UART_0, &dma_config);
-    hal_uart_register_callback(HAL_UART_0, _hal_uart_receive_callback, NULL);
-	return 0;
-}
-
-/*
  * port for i2c
  * CAUTION ! : 7697 output has no open-drain mode
  * */
@@ -143,8 +103,6 @@ void mp_hal_pin_od_low(mp_hal_pin_obj_t pin){
 void mp_hal_pin_od_high(mp_hal_pin_obj_t pin){
 	mp_hal_pin_input(pin);
 }
-
 void mp_hal_pin_open_drain(mp_hal_pin_obj_t pin){
 	hal_gpio_disable_pull(pin->gpio_num);
 }
-

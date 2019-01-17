@@ -74,7 +74,6 @@ mp_uint_t uart_rx_any(pyb_uart_obj_t *uart_obj);
 uint32_t uart_rx_char(pyb_uart_obj_t *uart_obj);
 size_t uart_tx_data(pyb_uart_obj_t *self, const void *src_in, size_t num_chars, int *errcode);
 void uart_tx_strn(pyb_uart_obj_t *uart_obj, const char *str, uint len);
-uint32_t get_current_millisecond(void);
 static inline bool uart_tx_avail(pyb_uart_obj_t *self) {
     return true;
 }
