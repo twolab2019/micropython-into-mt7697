@@ -148,6 +148,8 @@ APP_FILES += $(addprefix $(APP_MP_PATH_SRC)/,\
 			 machine_uart.c \
 			 machine_pin.c \
 			 modmachine.c \
+			 spi.c \
+			 machine_hw_spi.c \
 			 )
 
 ifeq ($(MTK_MINICLI_ENABLE),y)
