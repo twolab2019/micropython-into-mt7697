@@ -177,6 +177,8 @@ static void prvSetupHardware(void)
 #endif
 
     hal_flash_init();
+	log_uart_init(HAL_UART_0);
+	hal_wdt_deinit();
 }
 
 /**
