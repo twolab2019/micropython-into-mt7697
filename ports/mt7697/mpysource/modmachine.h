@@ -7,7 +7,7 @@ void machine_init(void);
 void machine_deinit(void);
 
 // extern const mp_obj_type_t machine_pwm_type;
-// extern const mp_obj_type_t machine_adc_type;
+extern const mp_obj_type_t machine_adc_type;
 // extern const mp_obj_type_t machine_rtc_type;
 extern const mp_obj_type_t machine_pin_type;
 // extern const mp_obj_type_t machine_timer_type;

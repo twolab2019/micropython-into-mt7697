@@ -147,6 +147,7 @@ APP_FILES += $(addprefix $(APP_MP_PATH_SRC)/,\
 			 uart.c \
 			 machine_uart.c \
 			 machine_pin.c \
+			 machine_adc.c \
 			 modmachine.c \
 			 spi.c \
 			 machine_hw_spi.c \
