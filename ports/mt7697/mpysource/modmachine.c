@@ -104,7 +104,7 @@ STATIC const mp_rom_map_elem_t machine_module_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_ADC),           MP_ROM_PTR(&machine_adc_type) },
 	{ MP_ROM_QSTR(MP_QSTR_I2C),           MP_ROM_PTR(&machine_i2c_type) },
 	// { MP_ROM_QSTR(MP_QSTR_Timer),         MP_ROM_PTR(&machine_timer_type) },
-	// { MP_ROM_QSTR(MP_QSTR_WDT),           MP_ROM_PTR(&machine_wdt_type) },
+	{ MP_ROM_QSTR(MP_QSTR_WDT),           MP_ROM_PTR(&machine_wdt_type) },
 
     // { MP_ROM_QSTR(MP_QSTR_time_pulse_us), MP_ROM_PTR(&machine_time_pulse_us_obj) },
 	// -- TODO 
