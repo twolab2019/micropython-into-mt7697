@@ -449,7 +449,7 @@ STATIC mp_obj_t machine_i2c_writeto(size_t n_args, const mp_obj_t *args) {
     // return number of acks received
     return MP_OBJ_NEW_SMALL_INT(ret);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(machine_i2c_writeto_obj, 3, 4, machine_i2c_writeto);
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(machine_i2c_writeto_obj, 3, 4, machine_i2c_writeto);
 
 STATIC int read_mem(mp_obj_t self_in, uint16_t addr, uint32_t memaddr, uint8_t addrsize, uint8_t *buf, size_t len) {
     mp_obj_base_t *self = (mp_obj_base_t*)MP_OBJ_TO_PTR(self_in);
