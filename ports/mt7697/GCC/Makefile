@@ -151,7 +151,9 @@ APP_FILES += $(addprefix $(APP_MP_PATH_SRC)/,\
 			 machine_wdt.c \
 			 machine_rtc.c \
 			 machine_pwm.c \
+			 machine_timer.c \
 			 modmachine.c \
+			 mphelp.c \
 			 spi.c \
 			 machine_hw_spi.c \
 			 )

@@ -68,6 +68,8 @@
 #include "extmod/vfs_fat.h"
 #include "storage.h"
 
+#include "machine_wdt.h" // for ctrl-D
+
 fs_user_mount_t fs_user_mount_flash;
 
 // -- 16k bytes for stack size of freeRTOS task--
@@ -236,9 +238,13 @@ void mp_task(void *pvParameters)
     pyexec_event_repl_init();
     for (;;) {
         int c = mp_hal_stdin_rx_chr();
-        if (pyexec_event_repl_process_char(c)) {
-            break;
-        }
+		int res = pyexec_event_repl_process_char(c);
+        if (res == 0) {
+        }else if (res == PYEXEC_FORCED_EXIT){
+			software_reset();
+		}else{
+			break;
+		}
     }
     #else
     pyexec_friendly_repl();

@@ -39,6 +39,7 @@
 #include "lib/utils/pyexec.h"
 #include "uart.h"
 #include "spi.h"
+#include "machine_wdt.h"
 
 void machine_init(void){
 	;// TODO
@@ -66,7 +67,7 @@ MP_DEFINE_CONST_FUN_OBJ_0(machine_info_obj, machine_info);
 
 
 STATIC mp_obj_t machine_reset(void){
-	// TODO
+	software_reset();
 	return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_0(machine_reset_obj, machine_reset);
@@ -88,7 +89,7 @@ STATIC const mp_rom_map_elem_t machine_module_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR___name__),      MP_ROM_QSTR(MP_QSTR_umachine) },
 	{ MP_ROM_QSTR(MP_QSTR_info),          MP_ROM_PTR(&machine_info_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_reset),         MP_ROM_PTR(&machine_reset_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_soft_reset),    MP_ROM_PTR(&machine_soft_reset_obj) },
+	// { MP_ROM_QSTR(MP_QSTR_soft_reset),    MP_ROM_PTR(&machine_soft_reset_obj) },
 	// { MP_ROM_QSTR(MP_QSTR_enable_irq),    MP_ROM_PTR(&machine_enable_irq_obj) },
 	// { MP_ROM_QSTR(MP_QSTR_disable_irq),    MP_ROM_PTR(&machine_disable_irq_obj) },
 	// { MP_ROM_QSTR(MP_QSTR_freq),    MP_ROM_PTR(&machine_freq_obj) },
@@ -103,7 +104,7 @@ STATIC const mp_rom_map_elem_t machine_module_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_PWM),           MP_ROM_PTR(&machine_pwm_type) },
 	{ MP_ROM_QSTR(MP_QSTR_ADC),           MP_ROM_PTR(&machine_adc_type) },
 	{ MP_ROM_QSTR(MP_QSTR_I2C),           MP_ROM_PTR(&machine_i2c_type) },
-	// { MP_ROM_QSTR(MP_QSTR_Timer),         MP_ROM_PTR(&machine_timer_type) },
+	{ MP_ROM_QSTR(MP_QSTR_Timer),         MP_ROM_PTR(&machine_timer_type) },
 	{ MP_ROM_QSTR(MP_QSTR_WDT),           MP_ROM_PTR(&machine_wdt_type) },
 
     // { MP_ROM_QSTR(MP_QSTR_time_pulse_us), MP_ROM_PTR(&machine_time_pulse_us_obj) },
