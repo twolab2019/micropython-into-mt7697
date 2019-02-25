@@ -1,0 +1,4 @@
+#ifndef __LINKIT_7697_MACHINE_TIMER_H__
+#define __LINKIT_7697_MACHINE_TIMER_H__
+
+#endif 
