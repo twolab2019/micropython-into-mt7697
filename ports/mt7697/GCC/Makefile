@@ -152,10 +152,10 @@ APP_FILES += $(addprefix $(APP_MP_PATH_SRC)/,\
 			 machine_rtc.c \
 			 machine_pwm.c \
 			 machine_timer.c \
-			 modmachine.c \
 			 mphelp.c \
-			 spi.c \
+			 modmachine.c \
 			 machine_hw_spi.c \
+			 machine_i2c.c \
 			 )
 
 ifeq ($(MTK_MINICLI_ENABLE),y)
@@ -286,6 +286,9 @@ include ./mt7697_mpy_rule.mk
 
 clean:
 	rm -rf $(OUTPATH)
+
+p-%:
+	@echo $* = $($*)
 
 .PHONY: options
 

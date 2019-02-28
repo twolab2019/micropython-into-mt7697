@@ -40,6 +40,7 @@
 #include "uart.h"
 #include "spi.h"
 #include "machine_wdt.h"
+#include "i2c.h"
 
 void machine_init(void){
 	;// TODO
@@ -103,8 +104,12 @@ STATIC const mp_rom_map_elem_t machine_module_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_RTC),           MP_ROM_PTR(&machine_rtc_type) },
 	{ MP_ROM_QSTR(MP_QSTR_PWM),           MP_ROM_PTR(&machine_pwm_type) },
 	{ MP_ROM_QSTR(MP_QSTR_ADC),           MP_ROM_PTR(&machine_adc_type) },
-	{ MP_ROM_QSTR(MP_QSTR_I2C),           MP_ROM_PTR(&machine_i2c_type) },
 	{ MP_ROM_QSTR(MP_QSTR_Timer),         MP_ROM_PTR(&machine_timer_type) },
+#if MICROPY_PY_MACHINE_I2C
+	{ MP_ROM_QSTR(MP_QSTR_I2C),           MP_ROM_PTR(&machine_hard_i2c_type) },
+#else
+	{ MP_ROM_QSTR(MP_QSTR_I2C),           MP_ROM_PTR(&machine_i2c_type) },
+#endif
 	{ MP_ROM_QSTR(MP_QSTR_WDT),           MP_ROM_PTR(&machine_wdt_type) },
 
     // { MP_ROM_QSTR(MP_QSTR_time_pulse_us), MP_ROM_PTR(&machine_time_pulse_us_obj) },

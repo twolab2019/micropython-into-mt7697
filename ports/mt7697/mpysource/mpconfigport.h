@@ -117,7 +117,7 @@
 #define MICROPY_PY_MACHINE_PULSE    (1)
 #define MICROPY_PY_MACHINE_PIN_MAKE_NEW mp_pin_make_new
 #define MICROPY_PY_MACHINE_I2C      (1)
-#if MICROPY_HW_ENABLE_HW_I2C
+#if MICROPY_PY_MACHINE_I2C
 #define MICROPY_PY_MACHINE_I2C_MAKE_NEW machine_hard_i2c_make_new
 #endif
 #define MICROPY_PY_MACHINE_SPI      (1)

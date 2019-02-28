@@ -24,42 +24,27 @@
  * THE SOFTWARE.
  */
 
-#ifndef MICROPY_INCLUDED_MT7697_HW_SPI_H
-#define MICROPY_INCLUDED_MT7697_HW_SPI_H
+#ifndef MICROPY_INCLUDED_MT7697_HW_I2C_H
+#define MICROPY_INCLUDED_MT7697_HW_I2C_H
 /* hal includes */
 #include "hal.h"
 #include "system_mt7687.h"
 #include "top.h"
-
-/* Private typedef -----------------------------------------------------------*/
-/* Private define ------------------------------------------------------------*/
-/* Private macro -------------------------------------------------------------*/
-#define SPIM_PIN_NUMBER_CS      HAL_GPIO_32
-#define SPIM_PIN_FUNC_CS        HAL_GPIO_32_GPIO32
-#define SPIM_PIN_NUMBER_CLK     HAL_GPIO_31
-#define SPIM_PIN_FUNC_CLK       HAL_GPIO_31_SPI_SCK_M_CM4
-#define SPIM_PIN_NUMBER_MOSI    HAL_GPIO_29
-#define SPIM_PIN_FUNC_MOSI      HAL_GPIO_29_SPI_MOSI_M_CM4
-#define SPIM_PIN_NUMBER_MISO    HAL_GPIO_30
-#define SPIM_PIN_FUNC_MISO      HAL_GPIO_30_SPI_MISO_M_CM4
-typedef struct _machine_hw_spi_obj_t {
+typedef struct _machine_hard_i2c_obj_t {
     mp_obj_base_t base;
     uint8_t  id;
-    uint32_t baudrate;
-    uint8_t polarity;
-    uint8_t phase;
-    uint8_t bits;
-    uint8_t firstbit;
-    int8_t sck;
-    int8_t mosi;
-    int8_t miso;
+    uint32_t freq;
+    uint32_t timeout;
     enum {
-        MACHINE_HW_SPI_STATE_NONE,
-        MACHINE_HW_SPI_STATE_INIT,
-        MACHINE_HW_SPI_STATE_DEINIT
-    } state;
-    uint32_t address;
-} machine_hw_spi_obj_t;
+        MACHINE_HW_I2C_STATE_NONE,
+        MACHINE_HW_I2C_STATE_INIT,
+        MACHINE_HW_I2C_STATE_DEINIT,
+    } state; 
+} machine_hard_i2c_obj_t;
 
-extern const mp_obj_type_t machine_hw_spi_type;
+MP_DECLARE_CONST_FUN_OBJ_KW(machine_i2c_init_obj);
+//MP_DECLARE_CONST_FUN_OBJ_1(machine_i2c_scan_obj);
+MP_DECLARE_CONST_FUN_OBJ_VAR_BETWEEN(machine_i2c_writeto_obj);
+MP_DECLARE_CONST_FUN_OBJ_VAR_BETWEEN(machine_i2c_readfrom_obj);
+extern const mp_obj_type_t machine_hard_i2c_type; 
 #endif 
