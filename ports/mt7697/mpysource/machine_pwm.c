@@ -38,13 +38,18 @@
  * PWM (Pulse Width Modulation)
  * machine.PWM class
  *
- * PWM(pin_no, *, freq=500, duty=0)
+ * PWM(pin_no, freq, *, duty=0,clk_src=PWM.CLK_SRC_20M)
  *
  * parameters: 
- *    freq : frequency (Hz) : 400 ~ 19000
+ *    freq : frequency (Hz)
+ *           clk src : min freq ~ 2048 base freq (max)
+ *           -----------------------------
+ *           2M Hz   : 31 Hz  ~ 1900 Hz
+ *           20M Hz  : 305 Hz ~ 19000 Hz
+ *           40M Hz  : 610 Hz ~ 39000 Hz 
  *    duty : duty cycle : 0 ~ 1024
  * 
- * Usage ex:
+ * example code:
  *
  * >>> from machine import PWM
  * >>> pwm7 = PWM(7)  
@@ -53,88 +58,157 @@
  * >>> pwm7.duty(50) # set duty cycle
  * >>> pwm7.freq(400) # set frequency
  * */
-#define HAL_DUTY_CYCLE_FROM_DUTY_CYCLE_BASE1024( x, p ) (  2 * x * p ) / 1024 
 
 typedef struct _machine_pwm_obj_t{
 	mp_obj_base_t base;
 	hal_gpio_pin_t gpio_num;
 	uint32_t duty;
 	uint32_t freq;
-	uint32_t total_count;
+	uint32_t get_total_count;
 }machine_pwm_obj_t;
 
-static bool is_pwm_clock_source_set = false;
-static int hal_clock_source = -1;
+static int hal_clk_const_set = -1;
 
-STATIC void machine_pwm_init_helper(
-		machine_pwm_obj_t * self,
-		size_t n_args,
-		const mp_obj_t *pos_args,
-		mp_map_t *kw_args){
+uint32_t clk_from_hal_const(int constant){
+	switch(constant){
+// 		case HAL_PWM_CLOCK_32KHZ: 
+// 			return 32768;
+		case HAL_PWM_CLOCK_2MHZ: 
+			return 2000000;
+		case HAL_PWM_CLOCK_20MHZ: 
+			return 20000000;
+// 		case HAL_PWM_CLOCK_26MHZ: 
+// 			return 26000000;
+		case HAL_PWM_CLOCK_40MHZ: 
+			return 40000000;
+// 		case HAL_PWM_CLOCK_52MHZ: 
+// 			return 52000000;
+		default : 
+			return 0;
+	}
+}
 
-	enum {ARG_freq, ARG_duty, ARG_clock};
+
+static int _pwm_set_freq(hal_pwm_channel_t hal_pwm_ch, uint32_t freq, uint32_t * get_total_count_ptr){
+
+	// -- check total count is acceptable 
+	uint32_t clk_src = clk_from_hal_const(hal_clk_const_set);
+	uint32_t cal_total_count = clk_src / freq;
+	if(clk_src == 0){
+		return -1;
+	}
+	// -- total count fix for 20M
+	if(hal_clk_const_set == (int) HAL_PWM_CLOCK_20MHZ){
+		cal_total_count *= 2;
+	}
+
+
+	if(cal_total_count >= 1024 && cal_total_count <= 0xffff){
+	}else if(cal_total_count < 1024){
+		freq = clk_src / 1024; 
+	}else if (cal_total_count > 0xffff){
+		freq = clk_src / 0xffff;
+	}
+
+	// -- pwm set freq
+	if(HAL_PWM_STATUS_OK != hal_pwm_set_frequency(hal_pwm_ch, freq, get_total_count_ptr) ){
+		return -2;
+	}
+	// -- total count fix for 20M
+	if(hal_clk_const_set == (int) HAL_PWM_CLOCK_20MHZ){
+		*get_total_count_ptr = (*get_total_count_ptr) * 2;
+	}
+
+	return 0;
+}
+
+static int _pwm_set_duty(hal_pwm_channel_t hal_pwm_ch, uint32_t duty_1024, uint32_t total_count){
+	duty_1024 = (duty_1024 > 1024)?(1024):(duty_1024);
+
+	uint32_t hal_duty_count = ( duty_1024 * total_count ) / 1024;
+
+
+	if(HAL_PWM_STATUS_OK != hal_pwm_set_duty_cycle(hal_pwm_ch, hal_duty_count)){
+		return -1;
+	}
+	return 0;
+}
+
+/*
+ * */
+STATIC void machine_pwm_init_helper(machine_pwm_obj_t * self, size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args){
+
+	enum {ARG_freq, ARG_duty, ARG_clk_src};
 	static const mp_arg_t allowed_args[] = {
-		{MP_QSTR_freq, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 500} },
-		{MP_QSTR_duty, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0 } },
-		{MP_QSTR_clock, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = HAL_PWM_CLOCK_20MHZ } },
+		{MP_QSTR_freq,    MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = -1} },
+		{MP_QSTR_duty,    MP_ARG_INT,                   {.u_int = 0 } },
+		{MP_QSTR_clk_src, MP_ARG_INT,                   {.u_int = HAL_PWM_CLOCK_20MHZ } },
 	};
+
 	mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
 	mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+	// -- fetch arguments 
 	int freq = args[ARG_freq].u_int;
 	int duty = args[ARG_duty].u_int;
-	int clock = args[ARG_clock].u_int;
+	int hal_clk_src_const = args[ARG_clk_src].u_int;
 
+
+	// -- fetch pin obj from gpio_num
 	const machine_pin_obj_t *pin_obj_p = machine_pin_obj_from_gpio_num(self->gpio_num);
 	if(pin_obj_p == 0){
 		mp_raise_ValueError("pin num error!");
 		return;
 	}
 
+	// -- pin GPIO init
 	if(HAL_GPIO_STATUS_OK != hal_gpio_init(pin_obj_p->gpio_num)){
 		nlr_raise(mp_obj_new_exception_msg(&mp_type_OSError, "hal init fail!"));
 		return;
 	}
 
+	// -- pin pinmux set
 	if(HAL_PINMUX_STATUS_OK != hal_pinmux_set_function(pin_obj_p->gpio_num, pin_obj_p->pwm_pinmux_num)){
 		nlr_raise(mp_obj_new_exception_msg(&mp_type_OSError, "hal pinmux fail!"));
 		return;
 	}
 
+	// -- check hal_clk_src_const
+	if( clk_from_hal_const(hal_clk_src_const) == 0)
+	if(hal_clk_src_const < 0 || hal_clk_src_const >= HAL_PWM_CLOCK_52MHZ){
+		mp_raise_ValueError("pwm clk src set error!!");
+	}
 
-	if(!is_pwm_clock_source_set){ // -- check if the clk source has been set
-		if(HAL_PWM_STATUS_OK != hal_pwm_init(clock)){
+	// -- pwm init and set clk src
+	if(hal_clk_const_set == -1){
+		if(HAL_PWM_STATUS_OK != hal_pwm_init(hal_clk_src_const)){
 			nlr_raise(mp_obj_new_exception_msg(&mp_type_OSError, "hal set clk source fail!"));
 			return;
 		}
-		is_pwm_clock_source_set = true;
+		// -- set clk src ok
+		hal_clk_const_set = hal_clk_src_const;
+	}else if(hal_clk_const_set == hal_clk_src_const){
+		// -- do nothing
+	}else{
+		mp_raise_ValueError("clk src set error!");
 	}
-	hal_clock_source = clock;
 
-	if(freq == -1){
-		mp_raise_ValueError("pwm freq value required!");
-		return;
+	// -- pwm set freq
+	if(_pwm_set_freq(pin_obj_p->pwm_ch, freq, &(self->get_total_count)) < 0){
+		mp_raise_ValueError("pwm set freq error!!");
 	}
-
 	self->freq = freq;
-	if( HAL_PWM_STATUS_OK != hal_pwm_set_frequency(pin_obj_p->pwm_ch, self->freq, &(self->total_count)) ){
-		self->freq = 0;
-		mp_raise_ValueError("pwm freq value out of range!");
-		return;
-	}
 
-	self->duty = (uint32_t) duty;
-	if(self->duty > 1024){
-		mp_raise_ValueError("pwm duty value out of range!");
-		return;
-	}
-	uint32_t hal_duty_cycle = HAL_DUTY_CYCLE_FROM_DUTY_CYCLE_BASE1024(self->duty, self->total_count);
-	if(HAL_PWM_STATUS_OK != hal_pwm_set_duty_cycle(pin_obj_p->pwm_ch, hal_duty_cycle)){
+	// -- pwm set duty
+	if(_pwm_set_duty(pin_obj_p->pwm_ch, duty, self->get_total_count) < 0){
 		self->freq = 0;
 		self->duty = 0;
 		mp_raise_ValueError("pwm duty value out of range!");
 		return;
 	}
+	self->duty = (duty > 1024)?(1024):(duty);
 
+	// -- pwm start 
 	if(HAL_PWM_STATUS_OK != hal_pwm_start(pin_obj_p->pwm_ch)){
 		self->freq = 0;
 		self->duty = 0;
@@ -145,12 +219,6 @@ STATIC void machine_pwm_init_helper(
 	return;
 }
 
-
-/*
- * p7 = PWM(7,freq[,duty])
- * freq : 400 ~ 19000 Hz
- * duty : 0~1023 
- * */
 STATIC mp_obj_t machine_pwm_make_new(const mp_obj_type_t *type,
 		size_t n_args,
 		size_t n_kw,
@@ -204,20 +272,35 @@ STATIC void machine_pwm_print(const mp_print_t *print, mp_obj_t self_in, mp_prin
 	uint16_t duty_b1024 = self->duty;
 
 	mp_printf(print, "PWM(%u", (uint32_t) pin_num);
-	if(self->total_count != 0){
-		mp_printf(print, ", freq=%u, duty=%u", freq, duty_b1024);
+	if(self->get_total_count != 0){
+		mp_printf(print, ", freq=%u, duty=%u, clk src=%lu", 
+				freq, 
+				duty_b1024,
+			   	clk_from_hal_const(hal_clk_const_set));
 	}
 	mp_printf(print, ")");
+
 }
 
-
-
+STATIC mp_obj_t machine_pwm_stop(mp_obj_t self_in){
+	machine_pwm_obj_t *self = MP_OBJ_TO_PTR(self_in);
+	const machine_pin_obj_t *pin_obj_p = machine_pin_obj_from_gpio_num(self->gpio_num);
+	if(hal_pwm_stop(pin_obj_p->pwm_ch) != HAL_PWM_STATUS_OK){
+		nlr_raise(mp_obj_new_exception_msg(&mp_type_OSError, "pwm stop fail!"));
+	}
+	return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(machine_pwm_stop_obj, machine_pwm_stop);
 
 STATIC mp_obj_t machine_pwm_deinit(mp_obj_t self_in){
 	machine_pwm_obj_t *self = MP_OBJ_TO_PTR(self_in);
 	const machine_pin_obj_t *pin_obj_p = machine_pin_obj_from_gpio_num(self->gpio_num);
 	hal_pwm_stop(pin_obj_p->pwm_ch);
 	hal_pinmux_set_function(self->gpio_num, 0);
+	if(hal_pwm_deinit() != HAL_PWM_STATUS_OK){
+		nlr_raise(mp_obj_new_exception_msg(&mp_type_OSError, "pwm deinit fail!"));
+	}
+	hal_clk_const_set = -1;
 	return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(machine_pwm_deinit_obj, machine_pwm_deinit);
@@ -227,59 +310,46 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(machine_pwm_deinit_obj, machine_pwm_deinit);
 
 STATIC mp_obj_t machine_pwm_freq(size_t n_args, const mp_obj_t *args){
 	machine_pwm_obj_t *self= args[0];
-	// -- get frequency 
 	if(n_args == 1){
 		return MP_OBJ_NEW_SMALL_INT(self->freq);
 	}
 
-	// -- set frequency
 	const machine_pin_obj_t * pin_obj_p = machine_pin_obj_from_gpio_num(self->gpio_num);
 	uint32_t freq = (uint32_t) mp_obj_get_int(args[1]);
-	if(HAL_PWM_STATUS_OK != hal_pwm_set_frequency(
-				pin_obj_p->pwm_ch, 
-				freq, 
-				&(self->total_count)
-				)){
-		mp_raise_ValueError("freq value error!");
+
+	// -- set freq
+	if(_pwm_set_freq(pin_obj_p->pwm_ch, freq, &(self->get_total_count)) < 0){
+		mp_raise_ValueError("invalid freq value!");
 	}
 	self->freq = freq;
 
-	if(HAL_PWM_STATUS_OK != hal_pwm_set_duty_cycle(
-				pin_obj_p->pwm_ch,
-				HAL_DUTY_CYCLE_FROM_DUTY_CYCLE_BASE1024(self->duty, self->total_count)
-				)){
-		nlr_raise(mp_obj_new_exception_msg(&mp_type_OSError, "hal set duty cycle failed!"));
+	// -- restore the duty cycle
+	if(_pwm_set_duty(pin_obj_p->pwm_ch, self->duty, self->get_total_count) < 0){
+		mp_raise_ValueError("restore duty error!");
 	}
 	return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(machine_pwm_freq_obj, 1, 2, machine_pwm_freq);
 
 
-
-
+/*
+ * args[0] : self
+ * args[1] : duty_1024
+ * */
 STATIC mp_obj_t machine_pwm_duty(size_t n_args, const mp_obj_t *args){
 	machine_pwm_obj_t *self = MP_OBJ_TO_PTR(args[0]);
+	const machine_pin_obj_t *pin_obj_p = machine_pin_obj_from_gpio_num(self->gpio_num);
 
-	// -- get duty cycle
 	if(n_args == 1){
 		return MP_OBJ_NEW_SMALL_INT(self->duty);
 	}
 
-	// -- set duty cycle 
-	const machine_pin_obj_t *pin_obj_p = machine_pin_obj_from_gpio_num(self->gpio_num);
-
-	uint32_t duty1024 = (uint32_t) mp_obj_get_int(args[1]);
-	if(duty1024 > 1024){
-		mp_raise_ValueError("pwm duty value out of range!");
+	// -- pwm set duty
+	uint32_t duty_1024 = (uint32_t) mp_obj_get_int(args[1]);
+	if(_pwm_set_duty(pin_obj_p->pwm_ch, duty_1024, self->get_total_count) < 0){
+		mp_raise_ValueError("set pwm duty!");
 	}
-
-	if(HAL_PWM_STATUS_OK != hal_pwm_set_duty_cycle(
-				pin_obj_p->pwm_ch, 
-				HAL_DUTY_CYCLE_FROM_DUTY_CYCLE_BASE1024(duty1024, self->total_count))
-			){
-		nlr_raise(mp_obj_new_exception_msg(&mp_type_OSError, "hal set duty cycle failed!"));
-	}
-	self->duty = duty1024;
+	self->duty = (duty_1024>1024)?(1024):(duty_1024);
 
 	return mp_const_none;
 }
@@ -293,14 +363,15 @@ STATIC const mp_rom_map_elem_t machine_pwm_locals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&machine_pwm_deinit_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_freq), MP_ROM_PTR(&machine_pwm_freq_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_duty), MP_ROM_PTR(&machine_pwm_duty_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_stop), MP_ROM_PTR(&machine_pwm_stop_obj) },
 
-	// -- Clock Source
-	{ MP_ROM_QSTR(MP_QSTR_CLK_SRC_32K), MP_ROM_INT(HAL_PWM_CLOCK_32KHZ) },
+	// -- clock source
+	// { MP_ROM_QSTR(MP_QSTR_CLK_SRC_32K), MP_ROM_INT(HAL_PWM_CLOCK_32KHZ) },
 	{ MP_ROM_QSTR(MP_QSTR_CLK_SRC_2M), MP_ROM_INT(HAL_PWM_CLOCK_2MHZ) },
 	{ MP_ROM_QSTR(MP_QSTR_CLK_SRC_20M), MP_ROM_INT(HAL_PWM_CLOCK_20MHZ) },
-	{ MP_ROM_QSTR(MP_QSTR_CLK_SRC_26M), MP_ROM_INT(HAL_PWM_CLOCK_26MHZ) },
+	// { MP_ROM_QSTR(MP_QSTR_CLK_SRC_26M), MP_ROM_INT(HAL_PWM_CLOCK_26MHZ) },
 	{ MP_ROM_QSTR(MP_QSTR_CLK_SRC_40M), MP_ROM_INT(HAL_PWM_CLOCK_40MHZ) },
-	{ MP_ROM_QSTR(MP_QSTR_CLK_SRC_52M), MP_ROM_INT(HAL_PWM_CLOCK_52MHZ) },
+	// { MP_ROM_QSTR(MP_QSTR_CLK_SRC_52M), MP_ROM_INT(HAL_PWM_CLOCK_52MHZ) },
 };
 STATIC MP_DEFINE_CONST_DICT(machine_pwm_locals_dict, machine_pwm_locals_table);
 
