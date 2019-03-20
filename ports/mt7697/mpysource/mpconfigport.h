@@ -223,7 +223,7 @@ extern const struct _mp_obj_module_t mp_module_uos;
     const char *readline_hist[8]; \
     \
     /* pointers to all UART objects (if they have been created) */ \
-    struct _pyb_uart_obj_t *pyb_uart_obj_all[MICROPY_HW_MAX_UART]; \
+    struct _machine_uart_obj_t *machine_uart_obj_all[MICROPY_HW_MAX_UART]; \
 
 
 #define MICROPY_PORT_BUILTIN_MODULES \

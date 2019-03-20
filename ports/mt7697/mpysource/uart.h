@@ -30,14 +30,14 @@ typedef enum {
     PYB_UART_0 = 0,
     PYB_UART_1 = 1,
     PYB_UART_MAX
-} pyb_uart_t;
+} machine_uart_t;
 
 #define CHAR_WIDTH_8BIT (0)
 #define CHAR_WIDTH_9BIT (1)
 
-typedef struct _pyb_uart_obj_t {
+typedef struct _machine_uart_obj_t {
     mp_obj_base_t base;
-    pyb_uart_t uart_id : 8;
+    machine_uart_t uart_id : 8;
     bool is_static : 1;
     bool is_enabled : 1;
     bool attached_to_repl;              // whether the UART is attached to REPL
@@ -57,24 +57,24 @@ typedef struct _pyb_uart_obj_t {
     bool receive_notice;
     bool event_transaction_error;
     bool is_any;
-} pyb_uart_obj_t;
+} machine_uart_obj_t;
 
-extern const mp_obj_type_t pyb_uart_type;
+extern const mp_obj_type_t machine_uart_type;
 
 void uart_init0(void);
 bool uart_exists(int uart_id);
-bool uart_init(pyb_uart_obj_t *uart_obj,
+bool uart_init(machine_uart_obj_t *uart_obj,
     uint32_t baudrate, uint32_t bits, uint32_t parity, uint32_t stop, bool flow);
-void uart_set_rxbuf(pyb_uart_obj_t *self, size_t len, void *buf);
-int uart_deinit(pyb_uart_obj_t *uart_obj);
+void uart_set_rxbuf(machine_uart_obj_t *self, size_t len, void *buf);
+int uart_deinit(machine_uart_obj_t *uart_obj);
 
-void uart_attach_to_repl(pyb_uart_obj_t *self, bool attached);
-uint32_t uart_get_baudrate(pyb_uart_obj_t *self);
-mp_uint_t uart_rx_any(pyb_uart_obj_t *uart_obj);
-uint32_t uart_rx_char(pyb_uart_obj_t *uart_obj);
-size_t uart_tx_data(pyb_uart_obj_t *self, const void *src_in, size_t num_chars, int *errcode);
-void uart_tx_strn(pyb_uart_obj_t *uart_obj, const char *str, uint len);
-static inline bool uart_tx_avail(pyb_uart_obj_t *self) {
+void uart_attach_to_repl(machine_uart_obj_t *self, bool attached);
+uint32_t uart_get_baudrate(machine_uart_obj_t *self);
+mp_uint_t uart_rx_any(machine_uart_obj_t *uart_obj);
+uint32_t uart_rx_char(machine_uart_obj_t *uart_obj);
+size_t uart_tx_data(machine_uart_obj_t *self, const void *src_in, size_t num_chars, int *errcode);
+void uart_tx_strn(machine_uart_obj_t *uart_obj, const char *str, uint len);
+static inline bool uart_tx_avail(machine_uart_obj_t *self) {
     return true;
 }
 

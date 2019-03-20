@@ -112,8 +112,8 @@ void uart_init0(void) {
 }
 
 bool uart_exists(int uart_id) {
-    if (uart_id > MP_ARRAY_SIZE(MP_STATE_PORT(pyb_uart_obj_all))) {
-        // safeguard against pyb_uart_obj_all array being configured too small
+    if (uart_id > MP_ARRAY_SIZE(MP_STATE_PORT(machine_uart_obj_all))) {
+        // safeguard against machine_uart_obj_all array being configured too small
         return false;
     }
     switch (uart_id) {
@@ -124,7 +124,7 @@ bool uart_exists(int uart_id) {
 }
 
 // assumes Init parameters have been set up correctly
-bool uart_init(pyb_uart_obj_t *uart_obj,
+bool uart_init(machine_uart_obj_t *uart_obj,
     uint32_t baudrate, uint32_t bits, uint32_t parity, uint32_t stop, bool flow) {
 	hal_uart_config_t uart_config;
     int baudrate_enum = HAL_UART_BAUDRATE_115200;
@@ -222,7 +222,7 @@ bool uart_init(pyb_uart_obj_t *uart_obj,
     return true;
 }
 
-void uart_set_rxbuf(pyb_uart_obj_t *self, size_t len, void *buf) {
+void uart_set_rxbuf(machine_uart_obj_t *self, size_t len, void *buf) {
     if (self->uart_id == PYB_UART_1) {
         self->read_buf_head = 0;
         self->read_buf_tail = 0;
@@ -231,7 +231,7 @@ void uart_set_rxbuf(pyb_uart_obj_t *self, size_t len, void *buf) {
     }
 }
 
-int uart_deinit(pyb_uart_obj_t *self) {
+int uart_deinit(machine_uart_obj_t *self) {
     self->is_enabled = false;
     int err = -1;
     if (self->uart_id < PYB_UART_0 || self->uart_id >= PYB_UART_MAX) {
@@ -247,16 +247,16 @@ int uart_deinit(pyb_uart_obj_t *self) {
     return err;
 }
 
-void uart_attach_to_repl(pyb_uart_obj_t *self, bool attached) {
+void uart_attach_to_repl(machine_uart_obj_t *self, bool attached) {
     self->attached_to_repl = attached;
 }
 
-uint32_t uart_get_baudrate(pyb_uart_obj_t *self) {
+uint32_t uart_get_baudrate(machine_uart_obj_t *self) {
     return self->baudrate;
 }
 
 // assumes there is a character available
-uint32_t uart_rx_char(pyb_uart_obj_t *self) {
+uint32_t uart_rx_char(machine_uart_obj_t *self) {
     uint32_t value;
     uint32_t time1;
     uint32_t time2;
@@ -281,7 +281,7 @@ uint32_t uart_rx_char(pyb_uart_obj_t *self) {
     return value &= 0xff;
 }
 
-mp_uint_t uart_rx_any(pyb_uart_obj_t *self) {
+mp_uint_t uart_rx_any(machine_uart_obj_t *self) {
     if (self->is_any)
         return 1;
     return -1;
@@ -292,7 +292,7 @@ mp_uint_t uart_rx_any(pyb_uart_obj_t *self) {
 // num_chars - number of characters to send (9-bit chars count for 2 bytes from src)
 // *errcode - returns 0 for success, MP_Exxx on error
 // returns the number of characters sent (valid even if there was an error)
-size_t uart_tx_data(pyb_uart_obj_t *self, const void *src_in, size_t num_chars, int *errcode) {
+size_t uart_tx_data(machine_uart_obj_t *self, const void *src_in, size_t num_chars, int *errcode) {
     if (num_chars == 0) {
         *errcode = 0;
         return 0;
@@ -327,7 +327,7 @@ size_t uart_tx_data(pyb_uart_obj_t *self, const void *src_in, size_t num_chars, 
     return num_tx;
 }
 
-void uart_tx_strn(pyb_uart_obj_t *uart_obj, const char *str, uint len) {
+void uart_tx_strn(machine_uart_obj_t *uart_obj, const char *str, uint len) {
     int errcode;
     uart_tx_data(uart_obj, str, len, &errcode);
 }

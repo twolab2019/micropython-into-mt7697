@@ -70,8 +70,8 @@
 ///
 ///     uart.any()               # returns True if any characters waiting
 
-STATIC void pyb_uart_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
-    pyb_uart_obj_t *self = MP_OBJ_TO_PTR(self_in);
+STATIC void machine_uart_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
+    machine_uart_obj_t *self = MP_OBJ_TO_PTR(self_in);
     if (!self->is_enabled) {
         mp_printf(print, "UART(%u)", self->uart_id);
     } else {
@@ -109,7 +109,7 @@ STATIC void pyb_uart_print(const mp_print_t *print, mp_obj_t self_in, mp_print_k
 ///   - `timeout_char` is the timeout in milliseconds to wait between characters.
 ///   - `flow` is RTS | CTS where RTS == 256, CTS == 512
 ///   - `read_buf_len` is the character length of the read buffer (0 to disable).
-STATIC mp_obj_t pyb_uart_init_helper(pyb_uart_obj_t *self, size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+STATIC mp_obj_t machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_baudrate, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 115200} },
         { MP_QSTR_bits, MP_ARG_INT, {.u_int = 8} },
@@ -200,7 +200,7 @@ STATIC mp_obj_t pyb_uart_init_helper(pyb_uart_obj_t *self, size_t n_args, const 
 ///
 ///   - `UART(0)` is on : `(RX, TX) = (GPIO2, GPIO3) = (P0, P1)`
 ///   - `UART(1)` is on : `(RX, TX) = (GPIO36, GPIO37) = (P7, P6)`
-STATIC mp_obj_t pyb_uart_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
+STATIC mp_obj_t machine_uart_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     // check arguments
     mp_arg_check_num(n_args, n_kw, 1, MP_OBJ_FUN_ARGS_MAX, true);
 
@@ -216,58 +216,58 @@ STATIC mp_obj_t pyb_uart_make_new(const mp_obj_type_t *type, size_t n_args, size
        nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError, "UART(%d) is disabled (dedicated to REPL)", uart_id));
     }
 
-    pyb_uart_obj_t *self;
-    if (MP_STATE_PORT(pyb_uart_obj_all)[uart_id] == NULL) {
+    machine_uart_obj_t *self;
+    if (MP_STATE_PORT(machine_uart_obj_all)[uart_id] == NULL) {
         // create new UART object
-        self = m_new0(pyb_uart_obj_t, 1);
-        self->base.type = &pyb_uart_type;
+        self = m_new0(machine_uart_obj_t, 1);
+        self->base.type = &machine_uart_type;
         self->uart_id = uart_id;
-        MP_STATE_PORT(pyb_uart_obj_all)[uart_id] = self;
+        MP_STATE_PORT(machine_uart_obj_all)[uart_id] = self;
     } else {
         // reference existing UART object
-        self = MP_STATE_PORT(pyb_uart_obj_all)[uart_id];
+        self = MP_STATE_PORT(machine_uart_obj_all)[uart_id];
     }
 
     if (n_args > 1 || n_kw > 0) {
         // start the peripheral
         mp_map_t kw_args;
         mp_map_init_fixed_table(&kw_args, n_kw, args + n_args);
-        pyb_uart_init_helper(self, n_args - 1, args + 1, &kw_args);
+        machine_uart_init_helper(self, n_args - 1, args + 1, &kw_args);
     }
 
     return MP_OBJ_FROM_PTR(self);
 }
 
-STATIC mp_obj_t pyb_uart_init(size_t n_args, const mp_obj_t *args, mp_map_t *kw_args) {
-    return pyb_uart_init_helper(MP_OBJ_TO_PTR(args[0]), n_args - 1, args + 1, kw_args);
+STATIC mp_obj_t machine_uart_init(size_t n_args, const mp_obj_t *args, mp_map_t *kw_args) {
+    return machine_uart_init_helper(MP_OBJ_TO_PTR(args[0]), n_args - 1, args + 1, kw_args);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_KW(pyb_uart_init_obj, 1, pyb_uart_init);
+STATIC MP_DEFINE_CONST_FUN_OBJ_KW(machine_uart_init_obj, 1, machine_uart_init);
 
 /// \method deinit()
 /// Turn off the UART bus.
-STATIC mp_obj_t pyb_uart_deinit(mp_obj_t self_in) {
-    pyb_uart_obj_t *self = MP_OBJ_TO_PTR(self_in);
+STATIC mp_obj_t machine_uart_deinit(mp_obj_t self_in) {
+    machine_uart_obj_t *self = MP_OBJ_TO_PTR(self_in);
     if (self->uart_id == PYB_UART_0) {
        nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError, "UART(%d) is disabled (dedicated to REPL)", self->uart_id));
     }
     uart_deinit(self);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(pyb_uart_deinit_obj, pyb_uart_deinit);
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(machine_uart_deinit_obj, machine_uart_deinit);
 
 /// \method any()
 /// Return `True` if any characters waiting, else `False`.
-STATIC mp_obj_t pyb_uart_any(mp_obj_t self_in) {
-    pyb_uart_obj_t *self = MP_OBJ_TO_PTR(self_in);
+STATIC mp_obj_t machine_uart_any(mp_obj_t self_in) {
+    machine_uart_obj_t *self = MP_OBJ_TO_PTR(self_in);
     return MP_OBJ_NEW_SMALL_INT(uart_rx_any(self));
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(pyb_uart_any_obj, pyb_uart_any);
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(machine_uart_any_obj, machine_uart_any);
 
 /// \method writechar(char)
 /// Write a single character on the bus.  `char` is an integer to write.
 /// Return value: `None`.
-STATIC mp_obj_t pyb_uart_writechar(mp_obj_t self_in, mp_obj_t char_in) {
-    pyb_uart_obj_t *self = MP_OBJ_TO_PTR(self_in);
+STATIC mp_obj_t machine_uart_writechar(mp_obj_t self_in, mp_obj_t char_in) {
+    machine_uart_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
     // get the character to write (might be 9 bits)
     uint16_t data = mp_obj_get_int(char_in);
@@ -284,13 +284,13 @@ STATIC mp_obj_t pyb_uart_writechar(mp_obj_t self_in, mp_obj_t char_in) {
 
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(pyb_uart_writechar_obj, pyb_uart_writechar);
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(machine_uart_writechar_obj, machine_uart_writechar);
 
 /// \method readchar()
 /// Receive a single character on the bus.
 /// Return value: The character read, as an integer.  Returns -1 on timeout.
-STATIC mp_obj_t pyb_uart_readchar(mp_obj_t self_in) {
-    pyb_uart_obj_t *self = MP_OBJ_TO_PTR(self_in);
+STATIC mp_obj_t machine_uart_readchar(mp_obj_t self_in) {
+    machine_uart_obj_t *self = MP_OBJ_TO_PTR(self_in);
     uint32_t readcahr = uart_rx_char(self);
     if (readcahr != -1) {
         return MP_OBJ_NEW_SMALL_INT(readcahr);
@@ -299,15 +299,15 @@ STATIC mp_obj_t pyb_uart_readchar(mp_obj_t self_in) {
         return MP_OBJ_NEW_SMALL_INT(-1);
     }
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(pyb_uart_readchar_obj, pyb_uart_readchar);
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(machine_uart_readchar_obj, machine_uart_readchar);
 
 
-STATIC const mp_rom_map_elem_t pyb_uart_locals_dict_table[] = {
+STATIC const mp_rom_map_elem_t machine_uart_locals_dict_table[] = {
     // instance methods
 
-    { MP_ROM_QSTR(MP_QSTR_init), MP_ROM_PTR(&pyb_uart_init_obj) },
-    { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&pyb_uart_deinit_obj) },
-    { MP_ROM_QSTR(MP_QSTR_any), MP_ROM_PTR(&pyb_uart_any_obj) },
+    { MP_ROM_QSTR(MP_QSTR_init), MP_ROM_PTR(&machine_uart_init_obj) },
+    { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&machine_uart_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR_any), MP_ROM_PTR(&machine_uart_any_obj) },
 
     /// \method read([nbytes])
     { MP_ROM_QSTR(MP_QSTR_read), MP_ROM_PTR(&mp_stream_read_obj) },
@@ -318,14 +318,14 @@ STATIC const mp_rom_map_elem_t pyb_uart_locals_dict_table[] = {
     /// \method write(buf)
     { MP_ROM_QSTR(MP_QSTR_write), MP_ROM_PTR(&mp_stream_write_obj) },
 
-    { MP_ROM_QSTR(MP_QSTR_writechar), MP_ROM_PTR(&pyb_uart_writechar_obj) },
-    { MP_ROM_QSTR(MP_QSTR_readchar), MP_ROM_PTR(&pyb_uart_readchar_obj) },
+    { MP_ROM_QSTR(MP_QSTR_writechar), MP_ROM_PTR(&machine_uart_writechar_obj) },
+    { MP_ROM_QSTR(MP_QSTR_readchar), MP_ROM_PTR(&machine_uart_readchar_obj) },
 };
 
-STATIC MP_DEFINE_CONST_DICT(pyb_uart_locals_dict, pyb_uart_locals_dict_table);
+STATIC MP_DEFINE_CONST_DICT(machine_uart_locals_dict, machine_uart_locals_dict_table);
 
-STATIC mp_uint_t pyb_uart_read(mp_obj_t self_in, void *buf_in, mp_uint_t size, int *errcode) {
-    pyb_uart_obj_t *self = MP_OBJ_TO_PTR(self_in);
+STATIC mp_uint_t machine_uart_read(mp_obj_t self_in, void *buf_in, mp_uint_t size, int *errcode) {
+    machine_uart_obj_t *self = MP_OBJ_TO_PTR(self_in);
     byte *buf = buf_in;
 
     // read the data
@@ -347,8 +347,8 @@ STATIC mp_uint_t pyb_uart_read(mp_obj_t self_in, void *buf_in, mp_uint_t size, i
     }
 }
 
-STATIC mp_uint_t pyb_uart_write(mp_obj_t self_in, const void *buf_in, mp_uint_t size, int *errcode) {
-    pyb_uart_obj_t *self = MP_OBJ_TO_PTR(self_in);
+STATIC mp_uint_t machine_uart_write(mp_obj_t self_in, const void *buf_in, mp_uint_t size, int *errcode) {
+    machine_uart_obj_t *self = MP_OBJ_TO_PTR(self_in);
     const byte *buf = buf_in;
 
     // write the data
@@ -362,8 +362,8 @@ STATIC mp_uint_t pyb_uart_write(mp_obj_t self_in, const void *buf_in, mp_uint_t 
     }
 }
 
-STATIC mp_uint_t pyb_uart_ioctl(mp_obj_t self_in, mp_uint_t request, uintptr_t arg, int *errcode) {
-    pyb_uart_obj_t *self = MP_OBJ_TO_PTR(self_in);
+STATIC mp_uint_t machine_uart_ioctl(mp_obj_t self_in, mp_uint_t request, uintptr_t arg, int *errcode) {
+    machine_uart_obj_t *self = MP_OBJ_TO_PTR(self_in);
     mp_uint_t ret;
     if (request == MP_STREAM_POLL) {
         uintptr_t flags = arg;
@@ -382,19 +382,19 @@ STATIC mp_uint_t pyb_uart_ioctl(mp_obj_t self_in, mp_uint_t request, uintptr_t a
 }
 
 STATIC const mp_stream_p_t uart_stream_p = {
-    .read = pyb_uart_read,
-    .write = pyb_uart_write,
-    .ioctl = pyb_uart_ioctl,
+    .read = machine_uart_read,
+    .write = machine_uart_write,
+    .ioctl = machine_uart_ioctl,
     .is_text = false,
 };
 
-const mp_obj_type_t pyb_uart_type = {
+const mp_obj_type_t machine_uart_type = {
     { &mp_type_type },
     .name = MP_QSTR_UART,
-    .print = pyb_uart_print,
-    .make_new = pyb_uart_make_new,
+    .print = machine_uart_print,
+    .make_new = machine_uart_make_new,
     .getiter = mp_identity_getiter,
     .iternext = mp_stream_unbuffered_iter,
     .protocol = &uart_stream_p,
-    .locals_dict = (mp_obj_dict_t*)&pyb_uart_locals_dict,
+    .locals_dict = (mp_obj_dict_t*)&machine_uart_locals_dict,
 };
