@@ -153,6 +153,7 @@ APP_FILES += $(addprefix $(APP_MP_PATH_SRC)/,\
 			 modmachine.c \
 			 machine_hw_spi.c \
 			 machine_i2c.c \
+			 modnetwork.c \
 			 )
 
 ifeq ($(MTK_MINICLI_ENABLE),y)

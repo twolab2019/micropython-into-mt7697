@@ -74,7 +74,7 @@ fs_user_mount_t fs_user_mount_flash;
 #define MP_TASK_STACK_SIZE    (20 * 1024)
 #define MP_TASK_STACK_LEN     (MP_TASK_STACK_SIZE / sizeof(StackType_t))
 
-static char heap[50*1024];
+static char heap[20*1024];
 static char *stack_top;
 extern uint32_t __StackTop;
 extern uint32_t __StackLimit;

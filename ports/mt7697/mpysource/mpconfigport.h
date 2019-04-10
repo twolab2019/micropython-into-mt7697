@@ -172,6 +172,7 @@ typedef long mp_off_t;
 // extra built in modules to add to the list of known ones
 extern const struct _mp_obj_module_t mp_module_machine;
 extern const struct _mp_obj_module_t mp_module_uos;
+extern const struct _mp_obj_module_t mp_module_network;
 
 #define MP_PLAT_PRINT_STRN(str, len) mp_hal_stdout_tx_strn_cooked(str, len)
 
@@ -229,6 +230,7 @@ extern const struct _mp_obj_module_t mp_module_uos;
 #define MICROPY_PORT_BUILTIN_MODULES \
     { MP_ROM_QSTR(MP_QSTR_umachine), MP_ROM_PTR(&mp_module_machine) }, \
     { MP_ROM_QSTR(MP_QSTR_uos), MP_ROM_PTR(&mp_module_uos) }, \
+    { MP_ROM_QSTR(MP_QSTR_network), MP_ROM_PTR(&mp_module_network) }, \
 
 
 #define MICROPY_PORT_BUILTIN_MODULE_WEAK_LINKS \
