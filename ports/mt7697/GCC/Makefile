@@ -49,6 +49,7 @@ FEATURE = feature.mk
 include $(FEATURE)
 
 DEBUG = 0
+MTK_DEBUG_LEVEL = none
 FLOAT_TYPE = hard
 BUILD_DIR = $(PWD)/build
 MY_BUILD_DIR = $(PWD)/build
