@@ -151,6 +151,9 @@ APP_FILES += $(addprefix $(APP_MP_PATH_SRC)/,\
 			 machine_adc.c \
 			 machine_wdt.c \
 			 machine_rtc.c \
+			 machine_pwm.c \
+			 machine_timer.c \
+			 mphelp.c \
 			 modmachine.c \
 			 machine_hw_spi.c \
 			 machine_i2c.c \
@@ -285,6 +288,9 @@ include ./mt7697_mpy_rule.mk
 
 clean:
 	rm -rf $(OUTPATH)
+
+p-%:
+	@echo $* = $($*)
 
 .PHONY: options
 
