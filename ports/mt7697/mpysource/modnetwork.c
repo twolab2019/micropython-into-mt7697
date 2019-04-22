@@ -205,21 +205,25 @@ STATIC mp_obj_t mtk_status(size_t n_args, const mp_obj_t *args) {
     }
 
     switch ((uintptr_t)args[1]) {
-        if (self->if_id == WIFI_MODE_AP_ONLY) {
-            wifi_sta_list_t sta_list[WIFI_MAX_NUMBER_OF_STA];
-            uint8_t size = 0;
-            if (wifi_connection_get_sta_list(&size, sta_list) < 0)
-                mp_raise_msg(&mp_type_OSError, "wifi get sta list  error\r\n");
-            else {
-                mp_obj_t list = mp_obj_new_list(0, NULL);
-                for (int i = 0; i < size ; i++) {
-                    mp_obj_tuple_t *t =  mp_obj_new_tuple(1,NULL);
-                    t->items[0] = mp_obj_new_bytes(sta_list[i].mac_address, sizeof(sta_list[i].mac_address));
-                    mp_obj_list_append(list, t);
+        case (uintptr_t)MP_OBJ_NEW_QSTR(MP_QSTR_stations):
+            if (self->if_id == WIFI_MODE_AP_ONLY) {
+                wifi_sta_list_t sta_list[WIFI_MAX_NUMBER_OF_STA];
+                uint8_t size = 0;
+                if (wifi_connection_get_sta_list(&size, sta_list) < 0)
+                    mp_raise_msg(&mp_type_OSError, "wifi get sta list  error\r\n");
+                else {
+                    mp_obj_t list = mp_obj_new_list(0, NULL);
+                    for (int i = 0; i < size ; i++) {
+                        mp_obj_tuple_t *t =  mp_obj_new_tuple(1,NULL);
+                        t->items[0] = mp_obj_new_bytes(sta_list[i].mac_address, sizeof(sta_list[i].mac_address));
+                        mp_obj_list_append(list, t);
+                    }
+                    return list;
                 }
-                return list;
             }
-        }
+        break;
+        default:
+            mp_raise_ValueError("unknown status param");
     }
     return mp_const_none;
 }
