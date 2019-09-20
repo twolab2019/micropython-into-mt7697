@@ -232,6 +232,14 @@ void mp_task(void *pvParameters)
     mounted_flash = init_flash_fs(reset_mode);
     #endif
 
+    if (mounted_flash && (pyexec_mode_kind == PYEXEC_MODE_FRIENDLY_REPL)) {
+        mp_import_stat_t stat = mp_import_stat("/flash/boot.py");
+        if (stat == MP_IMPORT_STAT_FILE)
+            pyexec_file("/flash/boot.py");
+        stat = mp_import_stat("/flash/main.py");
+        if (stat == MP_IMPORT_STAT_FILE)
+            pyexec_file("/flash/main.py");
+    }
     mp_hal_stdout_tx_str("-- mp_task --");
     #if MICROPY_ENABLE_COMPILER
     #if MICROPY_REPL_EVENT_DRIVEN
