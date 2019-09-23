@@ -139,10 +139,6 @@ static mp_obj_t machine_wdt_make_new(const mp_obj_type_t * type, size_t n_args, 
 	return MP_OBJ_FROM_PTR(self);
 }
 
-void software_reset(){
-	hal_wdt_software_reset();
-}
-
 STATIC const mp_rom_map_elem_t machine_wdt_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_feed),   MP_ROM_PTR(&machine_wdt_feed_obj) },
     { MP_ROM_QSTR(MP_QSTR_init), MP_ROM_PTR(&machine_wdt_init_obj) },

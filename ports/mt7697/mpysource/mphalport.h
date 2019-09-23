@@ -6,7 +6,6 @@
 #include "py/ringbuf.h"
 
 extern ringbuf_t stdin_ringbuf;
-static inline mp_uint_t mp_hal_ticks_ms(void) { return 0; }
 uint32_t get_current_millisecond(void);
 
 /* GPIO function porting */
