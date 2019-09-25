@@ -1,0 +1,5 @@
+#ifndef __LINKIT_7697_MACHINE_UART_H__
+#define __LINKIT_7697_MACHINE_UART_H__
+
+
+#endif

@@ -35,40 +35,32 @@
 #include "lib/utils/interrupt_char.h"
 #include "uart.h"
 
-/// \moduleref pyb
-/// \class UART - duplex serial communication bus
-///
-/// UART implements the standard UART/USART duplex serial communications protocol.  At
-/// the physical level it consists of 2 lines: RX and TX.  The unit of communication
-/// is a character (not to be confused with a string character) which can be 8 or 9
-/// bits wide.
-///
-/// UART objects can be created and initialised using:
-///
-///     from pyb import UART
-///
-///     uart = UART(1, 9600)                         # init with given baudrate
-///     uart.init(9600, bits=8, parity=None, stop=1) # init with given parameters
-///
-/// Bits can be 8 or 9.  Parity can be None, 0 (even) or 1 (odd).  Stop can be 1 or 2.
-///
-/// A UART object acts like a stream object and reading and writing is done
-/// using the standard stream methods:
-///
-///     uart.read(10)       # read 10 characters, returns a bytes object
-///     uart.read()         # read all available characters
-///     uart.readline()     # read a line
-///     uart.readinto(buf)  # read and store into the given buffer
-///     uart.write('abc')   # write the 3 characters
-///
-/// Individual characters can be read/written using:
-///
-///     uart.readchar()     # read 1 character and returns it as an integer
-///     uart.writechar(42)  # write 1 character
-///
-/// To check if there is anything to be read, use:
-///
-///     uart.any()               # returns True if any characters waiting
+/*
+ * UART(1,baudrate=9600,bits=8,parity=None,stop=1)
+ *
+ * only support UART 1
+ *
+ * baudrate :
+ *     110, 300, 1200, 2400, 4800, 9600(defualt), 19200, 38400, 57600,
+ *     115200, 230400, 460800, 921600
+ *
+ * bits :
+ *     5, 6, 7, 8 (defualt)
+ *
+ * parity :
+ *     None (or 0)
+ *     1 (ODD)
+ *     2 (EVEN)
+ *
+ * stop :
+ *     1, 2
+ *
+ * Usage:
+ *     from machine import UART
+ *     uart = UART(1,115200)
+ *     uart = UART(1,115200,8,None,1)
+ *
+ * */
 
 STATIC void machine_uart_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     machine_uart_obj_t *self = MP_OBJ_TO_PTR(self_in);
@@ -97,26 +89,16 @@ STATIC void machine_uart_print(const mp_print_t *print, mp_obj_t self_in, mp_pri
     }
 }
 
-/// \method init(baudrate, bits=8, parity=None, stop=1, *, timeout=1000, timeout_char=0, flow=0, read_buf_len=64)
-///
-/// Initialise the UART bus with the given parameters:
-///
-///   - `baudrate` is the clock rate.
-///   - `bits` is the number of bits per byte, 7, 8 or 9.
-///   - `parity` is the parity, `None`, 0 (even) or 1 (odd).
-///   - `stop` is the number of stop bits, 1 or 2.
-///   - `timeout` is the timeout in milliseconds to wait for the first character.
-///   - `timeout_char` is the timeout in milliseconds to wait between characters.
-///   - `flow` is RTS | CTS where RTS == 256, CTS == 512
-///   - `read_buf_len` is the character length of the read buffer (0 to disable).
 STATIC mp_obj_t machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+
     static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_baudrate, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 115200} },
-        { MP_QSTR_bits, MP_ARG_INT, {.u_int = 8} },
-        { MP_QSTR_parity, MP_ARG_OBJ, {.u_rom_obj = MP_ROM_PTR(&mp_const_none_obj)} },
-        { MP_QSTR_stop, MP_ARG_INT, {.u_int = 1} },
+        { MP_QSTR_uart_id, MP_ARG_INT, {.u_int = 1} },
+        { MP_QSTR_baudrate, MP_ARG_INT, {.u_int = 9600} },
+        { MP_QSTR_bits, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 8} },
+        { MP_QSTR_parity, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = HAL_UART_PARITY_NONE} },
+        { MP_QSTR_stop, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 1} },
         { MP_QSTR_flow, MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = false} },
-        { MP_QSTR_timeout, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 1000} },
+        { MP_QSTR_timeout, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 5000} },
 //        { MP_QSTR_timeout_char, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
         { MP_QSTR_rxbuf, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
         { MP_QSTR_read_buf_len, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 10} }, // legacy
@@ -124,14 +106,29 @@ STATIC mp_obj_t machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args
 
     // parse args
     struct {
-        mp_arg_val_t baudrate, bits, parity, stop, flow, timeout, rxbuf, read_buf_len;
+        mp_arg_val_t uart_id, baudrate, bits, parity, stop, flow, timeout, rxbuf, read_buf_len;
     } args;
     mp_arg_parse_all(n_args, pos_args, kw_args,
         MP_ARRAY_SIZE(allowed_args), allowed_args, (mp_arg_val_t*)&args);
 
+
     // static UARTs are used for internal purposes and shouldn't be reconfigured
     if (self->is_static) {
         mp_raise_ValueError("UART is static and can't be init'd");
+    }
+
+    // uart id
+    switch (args.uart_id.u_int) {
+        case PYB_UART_0:
+            self->uart_id = PYB_UART_0;
+            break;
+        case PYB_UART_1:
+            self->uart_id = PYB_UART_1;
+            break;
+        default:
+            // UART does not exist or is not configured for this board
+            nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError, "UART(%d) does not exist", args.uart_id.u_int));
+            return mp_const_false;
     }
 
     // baudrate
@@ -139,17 +136,26 @@ STATIC mp_obj_t machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args
 
     // parity
     uint32_t parity;
-    if (args.parity.u_obj == mp_const_none) {
-        parity = HAL_UART_PARITY_NONE;
-    } else {
-        mp_int_t p = mp_obj_get_int(args.parity.u_obj);
-        parity = (p & 1) ? HAL_UART_PARITY_ODD: HAL_UART_PARITY_EVEN;
+    switch(args.parity.u_int) {
+        case HAL_UART_PARITY_NONE:
+            parity = HAL_UART_PARITY_NONE;
+            break;
+        case HAL_UART_PARITY_ODD:
+            parity = HAL_UART_PARITY_ODD;
+            break;
+        case HAL_UART_PARITY_EVEN:
+            parity = HAL_UART_PARITY_EVEN;
+            break;
+        default:
+            mp_raise_ValueError("unsupported combination of parity");
+            return mp_const_false;
+
     }
 
     // number of bits
     uint32_t bits = args.bits.u_int;
     if (bits < 5 || bits > 8) {
-        mp_raise_ValueError("unsupported combination of bits and parity");
+        mp_raise_ValueError("unsupported combination of bits");
     }
 
     // stop bits
@@ -232,14 +238,17 @@ STATIC mp_obj_t machine_uart_make_new(const mp_obj_type_t *type, size_t n_args, 
         // start the peripheral
         mp_map_t kw_args;
         mp_map_init_fixed_table(&kw_args, n_kw, args + n_args);
-        machine_uart_init_helper(self, n_args - 1, args + 1, &kw_args);
+        printf("uart_id = %d\n", self->uart_id);
+        //printf("0 rate = %d\n", mp_obj_get_int(args[1]));
+        machine_uart_init_helper(self, n_args , args, &kw_args);
     }
 
     return MP_OBJ_FROM_PTR(self);
 }
 
 STATIC mp_obj_t machine_uart_init(size_t n_args, const mp_obj_t *args, mp_map_t *kw_args) {
-    return machine_uart_init_helper(MP_OBJ_TO_PTR(args[0]), n_args - 1, args + 1, kw_args);
+    printf("n_args = %d \n", n_args);
+    return machine_uart_init_helper(MP_OBJ_TO_PTR(args[0]), n_args -1 , args + 1, kw_args);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_KW(machine_uart_init_obj, 1, machine_uart_init);
 
@@ -320,6 +329,11 @@ STATIC const mp_rom_map_elem_t machine_uart_locals_dict_table[] = {
 
     { MP_ROM_QSTR(MP_QSTR_writechar), MP_ROM_PTR(&machine_uart_writechar_obj) },
     { MP_ROM_QSTR(MP_QSTR_readchar), MP_ROM_PTR(&machine_uart_readchar_obj) },
+
+    { MP_ROM_QSTR(MP_QSTR_NONE), MP_ROM_INT(HAL_UART_PARITY_NONE)},
+    { MP_ROM_QSTR(MP_QSTR_ODD), MP_ROM_INT(HAL_UART_PARITY_ODD)},
+    { MP_ROM_QSTR(MP_QSTR_EVEN), MP_ROM_INT(HAL_UART_PARITY_EVEN)},
+
 };
 
 STATIC MP_DEFINE_CONST_DICT(machine_uart_locals_dict, machine_uart_locals_dict_table);

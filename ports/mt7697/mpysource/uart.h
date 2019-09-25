@@ -37,7 +37,7 @@ typedef enum {
 
 typedef struct _machine_uart_obj_t {
     mp_obj_base_t base;
-    machine_uart_t uart_id : 8;
+    machine_uart_t uart_id : 1;
     bool is_static : 1;
     bool is_enabled : 1;
     bool attached_to_repl;              // whether the UART is attached to REPL

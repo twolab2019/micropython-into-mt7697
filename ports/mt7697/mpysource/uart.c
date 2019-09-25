@@ -130,7 +130,6 @@ bool uart_init(machine_uart_obj_t *uart_obj,
     int baudrate_enum = HAL_UART_BAUDRATE_115200;
     int bits_enum = HAL_UART_WORD_LENGTH_8;
     int parity_enum = parity; 
-    int uart_port;
 
     switch (baudrate) {
         case 110:
@@ -190,15 +189,14 @@ bool uart_init(machine_uart_obj_t *uart_obj,
     }
     
     switch (uart_obj->uart_id) {
+        case PYB_UART_0:
+            hal_pinmux_set_function(HAL_GPIO_2, HAL_GPIO_2_UART1_RX_CM4);
+            hal_pinmux_set_function(HAL_GPIO_3, HAL_GPIO_3_UART1_TX_CM4);
+            break;
         case PYB_UART_1:
-            uart_port = 1;
             hal_pinmux_set_function(HAL_GPIO_36, HAL_GPIO_36_UART2_RX_CM4);
             hal_pinmux_set_function(HAL_GPIO_37, HAL_GPIO_37_UART2_TX_CM4);
             break;
-
-        default:
-            // UART does not exist or is not configured for this board
-            return false;
     }
 
     uart_config.baudrate = baudrate_enum;
@@ -310,6 +308,7 @@ size_t uart_tx_data(machine_uart_obj_t *self, const void *src_in, size_t num_cha
     while (1) {
         sed_cnt = hal_uart_send_polling(self->uart_id, src, sed_size);
         src += sed_cnt;
+        num_tx += sed_cnt;
         sed_size -= sed_cnt;
         if (sed_size == 0)
             break;
