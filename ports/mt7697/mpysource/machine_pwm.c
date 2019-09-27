@@ -44,9 +44,11 @@
  *    freq : frequency (Hz)
  *           clk src : min freq ~ 2048 base freq (max)
  *           -----------------------------
- *           2M Hz   : 31 Hz  ~ 1900 Hz
- *           20M Hz  : 305 Hz ~ 19000 Hz
- *           40M Hz  : 610 Hz ~ 39000 Hz 
+ *           2M Hz   : 30 Hz  ~ 976 Hz   -- disabled
+ *           20M Hz  : 305 Hz ~ 9765 Hz
+ *           26M Hz  : 396 Hz ~ 12695 Hz -- disabled
+ *           40M Hz  : 610 Hz ~ 19531 Hz
+ *           52M Hz  : 793 Hz ~ 25390 Hz -- disabled
  *    duty : duty cycle : 0 ~ 1024
  * 
  * example code:
@@ -57,7 +59,6 @@
  * >>> pwm7.freq() # get frequency 
  * >>> pwm7.duty(50) # set duty cycle
  * >>> pwm7.freq(400) # set frequency
- * >>> pwm7.deinit() # disable PWM 
  * */
 
 typedef struct _machine_pwm_obj_t{
@@ -90,35 +91,35 @@ uint32_t clk_from_hal_const(int constant){
 }
 
 
-static int _pwm_set_freq(hal_pwm_channel_t hal_pwm_ch, uint32_t* freq_p, uint32_t * get_total_count_ptr){
+static int _pwm_set_freq(hal_pwm_channel_t hal_pwm_ch, uint32_t freq, uint32_t * get_total_count_ptr){
 
 	// -- check total count is acceptable 
 	uint32_t clk_src = clk_from_hal_const(hal_clk_const_set);
-	uint32_t cal_total_count = clk_src / *freq_p;
+	uint32_t cal_total_count = clk_src / freq;
 	if(clk_src == 0){
 		return -1;
 	}
 	// -- total count fix for 20M
-	uint32_t FIX_20MHZ_FACTOR = 1;
 	if(hal_clk_const_set == (int) HAL_PWM_CLOCK_20MHZ){
-		FIX_20MHZ_FACTOR = 2;
+		cal_total_count *= 2;
 	}
 
-	cal_total_count *= FIX_20MHZ_FACTOR;
 
 	if(cal_total_count >= 1024 && cal_total_count <= 0xffff){
 	}else if(cal_total_count < 1024){
-		*freq_p = clk_src / 1024 * FIX_20MHZ_FACTOR; 
+		freq = clk_src / 1024;
 	}else if (cal_total_count > 0xffff){
-		*freq_p = clk_src / 0xffff * FIX_20MHZ_FACTOR;
+		freq = clk_src / 0xffff;
 	}
 
 	// -- pwm set freq
-	if(HAL_PWM_STATUS_OK != hal_pwm_set_frequency(hal_pwm_ch, *freq_p, get_total_count_ptr) ){
+	if(HAL_PWM_STATUS_OK != hal_pwm_set_frequency(hal_pwm_ch, freq, get_total_count_ptr) ){
 		return -2;
 	}
 	// -- total count fix for 20M
-	*get_total_count_ptr *= FIX_20MHZ_FACTOR;
+	if(hal_clk_const_set == (int) HAL_PWM_CLOCK_20MHZ){
+		*get_total_count_ptr = (*get_total_count_ptr) * 2;
+	}
 
 	return 0;
 }
@@ -150,7 +151,7 @@ STATIC void machine_pwm_init_helper(machine_pwm_obj_t * self, size_t n_args, con
 	mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
 	// -- fetch arguments 
-	uint32_t freq = (uint32_t) args[ARG_freq].u_int;
+	int freq = args[ARG_freq].u_int;
 	int duty = args[ARG_duty].u_int;
 	int hal_clk_src_const = args[ARG_clk_src].u_int;
 
@@ -195,7 +196,7 @@ STATIC void machine_pwm_init_helper(machine_pwm_obj_t * self, size_t n_args, con
 	}
 
 	// -- pwm set freq
-	if(_pwm_set_freq(pin_obj_p->pwm_ch, &freq, &(self->get_total_count)) < 0){
+	if(_pwm_set_freq(pin_obj_p->pwm_ch, freq, &(self->get_total_count)) < 0){
 		mp_raise_ValueError("pwm set freq error!!");
 	}
 	self->freq = freq;
@@ -283,18 +284,30 @@ STATIC void machine_pwm_print(const mp_print_t *print, mp_obj_t self_in, mp_prin
 
 }
 
+STATIC mp_obj_t machine_pwm_stop(mp_obj_t self_in){
+	machine_pwm_obj_t *self = MP_OBJ_TO_PTR(self_in);
+	const machine_pin_obj_t *pin_obj_p = machine_pin_obj_from_gpio_num(self->gpio_num);
+	if(hal_pwm_stop(pin_obj_p->pwm_ch) != HAL_PWM_STATUS_OK){
+		nlr_raise(mp_obj_new_exception_msg(&mp_type_OSError, "pwm stop fail!"));
+	}
+	return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(machine_pwm_stop_obj, machine_pwm_stop);
+
 STATIC mp_obj_t machine_pwm_deinit(mp_obj_t self_in){
 	machine_pwm_obj_t *self = MP_OBJ_TO_PTR(self_in);
 	const machine_pin_obj_t *pin_obj_p = machine_pin_obj_from_gpio_num(self->gpio_num);
-	// if(hal_pwm_deinit() != HAL_PWM_STATUS_OK){
-	if(hal_pwm_stop(pin_obj_p->pwm_ch) != HAL_PWM_STATUS_OK){
+	hal_pwm_stop(pin_obj_p->pwm_ch);
+	hal_pinmux_set_function(self->gpio_num, 0);
+	if(hal_pwm_deinit() != HAL_PWM_STATUS_OK){
 		nlr_raise(mp_obj_new_exception_msg(&mp_type_OSError, "pwm deinit fail!"));
 	}
-	// hal_clk_const_set = -1;
-	hal_pinmux_set_function(self->gpio_num, 0);
+	hal_clk_const_set = -1;
 	return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(machine_pwm_deinit_obj, machine_pwm_deinit);
+
+
 
 
 STATIC mp_obj_t machine_pwm_freq(size_t n_args, const mp_obj_t *args){
@@ -307,7 +320,7 @@ STATIC mp_obj_t machine_pwm_freq(size_t n_args, const mp_obj_t *args){
 	uint32_t freq = (uint32_t) mp_obj_get_int(args[1]);
 
 	// -- set freq
-	if(_pwm_set_freq(pin_obj_p->pwm_ch, &freq, &(self->get_total_count)) < 0){
+	if(_pwm_set_freq(pin_obj_p->pwm_ch, freq, &(self->get_total_count)) < 0){
 		mp_raise_ValueError("invalid freq value!");
 	}
 	self->freq = freq;
@@ -352,11 +365,15 @@ STATIC const mp_rom_map_elem_t machine_pwm_locals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&machine_pwm_deinit_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_freq), MP_ROM_PTR(&machine_pwm_freq_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_duty), MP_ROM_PTR(&machine_pwm_duty_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_stop), MP_ROM_PTR(&machine_pwm_stop_obj) },
 
 	// -- clock source
+	// { MP_ROM_QSTR(MP_QSTR_CLK_SRC_32K), MP_ROM_INT(HAL_PWM_CLOCK_32KHZ) },
 	{ MP_ROM_QSTR(MP_QSTR_CLK_SRC_2M), MP_ROM_INT(HAL_PWM_CLOCK_2MHZ) },
 	{ MP_ROM_QSTR(MP_QSTR_CLK_SRC_20M), MP_ROM_INT(HAL_PWM_CLOCK_20MHZ) },
+	// { MP_ROM_QSTR(MP_QSTR_CLK_SRC_26M), MP_ROM_INT(HAL_PWM_CLOCK_26MHZ) },
 	{ MP_ROM_QSTR(MP_QSTR_CLK_SRC_40M), MP_ROM_INT(HAL_PWM_CLOCK_40MHZ) },
+	// { MP_ROM_QSTR(MP_QSTR_CLK_SRC_52M), MP_ROM_INT(HAL_PWM_CLOCK_52MHZ) },
 };
 STATIC MP_DEFINE_CONST_DICT(machine_pwm_locals_dict, machine_pwm_locals_table);
 
