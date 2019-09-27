@@ -54,6 +54,7 @@
 #include "py/runtime.h"
 #include "py/mphal.h"
 #include "extmod/virtpin.h"
+#include "modmachine.h"
 #include "machine_pin.h"
 
 STATIC mp_obj_t machine_pin_call(mp_obj_t self_in, size_t n_args, size_t n_kw, const mp_obj_t *args);
@@ -115,8 +116,6 @@ const machine_pin_obj_t * machine_pin_obj_from_pin_num(uint8_t pin_num){
 	return NULL;
 }
 
-/*
- * */
 const machine_pin_obj_t * machine_pin_obj_from_upy_obj(mp_obj_t upy_obj){
 	if(MP_OBJ_IS_INT(upy_obj)){
 		return machine_pin_obj_from_pin_num(mp_obj_get_int(upy_obj));
@@ -172,7 +171,7 @@ STATIC mp_obj_t machine_pin_obj_init_helper(const machine_pin_obj_t *self, size_
 		pull = mp_obj_get_int(args[1].u_obj);
 	}
 	if(!(pull == GPIO_PIN_PULL_DOWN || pull == GPIO_PIN_PULL_UP || pull == GPIO_PIN_PULL_DISABLE)){
-		mp_raise_ValueError("invalid pin mode value");
+		nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError,"invalid pull mode: %d", pull));
 	}
 	if(HAL_GPIO_STATUS_OK != hal_gpio_init(self->gpio_num)){
 		mp_raise_msg(&mp_type_OSError, "hal gpio init error");
@@ -180,7 +179,7 @@ STATIC mp_obj_t machine_pin_obj_init_helper(const machine_pin_obj_t *self, size_
 	}
 
 	if(HAL_PINMUX_STATUS_OK != hal_pinmux_set_function(self->gpio_num, self->gpio_pinmux_num)){
-		mp_raise_msg(&mp_type_OSError, "hal pinmux error");
+		mp_raise_msg(&mp_type_OSError, "pinmux error");
 		return mp_const_none;
 	}
 
@@ -194,13 +193,13 @@ STATIC mp_obj_t machine_pin_obj_init_helper(const machine_pin_obj_t *self, size_
 			res = hal_gpio_set_direction(self->gpio_num, HAL_GPIO_DIRECTION_INPUT);
 			break;
 		default:
-			mp_raise_ValueError("invalid gpio direction");
+			nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError,"invalid io mode: %d", mode));
 			return mp_const_none;
 			break;
 	}
 
 	if(HAL_GPIO_STATUS_OK != res){
-		nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError,"hal gpio set dir error" ));
+		nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError,"set gpio dir error" ));
 		return mp_const_none;
 	}
 
@@ -217,7 +216,7 @@ STATIC mp_obj_t machine_pin_obj_init_helper(const machine_pin_obj_t *self, size_
 				res = hal_gpio_disable_pull(self->gpio_num);
 				break;
 			default:
-				nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_OSError,"invalid pull mode value"));
+				nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_OSError,"invalid pull mode"));
 				return mp_const_none;
 				break;
 		}
@@ -226,7 +225,7 @@ STATIC mp_obj_t machine_pin_obj_init_helper(const machine_pin_obj_t *self, size_
 	}
 
 	if(HAL_GPIO_STATUS_OK != res){
-		nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_OSError,"hal gpio pull up/down/disable error"));
+		nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_OSError,"invalid pull mode"));
 		return mp_const_none;
 	}
 
@@ -309,7 +308,7 @@ STATIC mp_obj_t machine_pin_irq(size_t n_args, const mp_obj_t *args, mp_map_t *k
 	enum {ARG_handler, ARG_trigger, ARG_debounce};
 	static const mp_arg_t allowed_args[] = {
 		{ MP_QSTR_handler , MP_ARG_OBJ, {.u_obj = mp_const_none }},
-		{ MP_QSTR_trigger , MP_ARG_INT, {.u_int = HAL_EINT_EDGE_RISING}},
+		{ MP_QSTR_trigger , MP_ARG_INT, {.u_int = GPIO_PIN_IRQ_RISING}},
 		{ MP_QSTR_debounce, MP_ARG_INT, {.u_int = 0 }},
 	};
 	const machine_pin_obj_t *self = MP_OBJ_TO_PTR(args[0]);
@@ -388,17 +387,21 @@ STATIC const mp_rom_map_elem_t machine_pin_locals_dict_table[] = {
 
 	{ MP_ROM_QSTR(MP_QSTR_IN),          MP_ROM_INT(GPIO_PIN_DIR_INPUT) },
 	{ MP_ROM_QSTR(MP_QSTR_OUT),         MP_ROM_INT(GPIO_PIN_DIR_OUTPUT) },
+// 	{MP_ROM_QSTR(MP_QSTR_OPEN_DRAIN),  MP_ROM_INT(GPIO_PIN_DIR_OPEN_DRAIN)},
 
 	/* class constants */
 	{ MP_ROM_QSTR(MP_QSTR_PULL_UP),     MP_ROM_INT(GPIO_PIN_PULL_UP) },
 	{ MP_ROM_QSTR(MP_QSTR_PULL_DOWN),   MP_ROM_INT(GPIO_PIN_PULL_DOWN) },
 	{ MP_ROM_QSTR(MP_QSTR_PULL_DISABLE),MP_ROM_INT(GPIO_PIN_PULL_DISABLE) },
 
-	{ MP_ROM_QSTR(MP_QSTR_IRQ_RISING),  MP_ROM_INT(HAL_EINT_EDGE_RISING) },
-	{ MP_ROM_QSTR(MP_QSTR_IRQ_FALLING), MP_ROM_INT(HAL_EINT_EDGE_FALLING) },
-	{ MP_ROM_QSTR(MP_QSTR_IRQ_FALLING_AND_RISING), MP_ROM_INT(HAL_EINT_EDGE_FALLING_AND_RISING) },
-	{ MP_ROM_QSTR(MP_QSTR_IRQ_HIGH),    MP_ROM_INT(HAL_EINT_LEVEL_HIGH) },
-	{ MP_ROM_QSTR(MP_QSTR_IRQ_LOW),     MP_ROM_INT(HAL_EINT_LEVEL_LOW) },
+	{ MP_ROM_QSTR(MP_QSTR_IRQ_RISING),  MP_ROM_INT(GPIO_PIN_IRQ_RISING) },
+	{ MP_ROM_QSTR(MP_QSTR_IRQ_FALLING), MP_ROM_INT(GPIO_PIN_IRQ_FALLING) },
+	{ MP_ROM_QSTR(MP_QSTR_IRQ_FALLING_AND_RISING), MP_ROM_INT(GPIO_PIN_IRQ_FALLING_AND_RISING) },
+	{ MP_ROM_QSTR(MP_QSTR_IRQ_HIGH),    MP_ROM_INT(GPIO_PIN_IRQ_HIGH) },
+	{ MP_ROM_QSTR(MP_QSTR_IRQ_LOW),     MP_ROM_INT(GPIO_PIN_IRQ_LOW) },
+
+	// { MP_ROM_QSTR(MP_QSTR_WAKE_LOW),    MP_ROM_INT(GPIO_PIN_INTR_LO_LEVEL) },
+	// { MP_ROM_QSTR(MP_QSTR_WAKE_HIGH),   MP_ROM_INT(GPIO_PIN_INTR_HI_LEVEL) },
 
 };
 STATIC MP_DEFINE_CONST_DICT(machine_pin_locals_dict, machine_pin_locals_dict_table);

@@ -4,7 +4,6 @@
 #include "hal.h"
 #include "py/obj.h"
 
-/* for class constant define */
 #define GPIO_PIN_NONE 0
 #define	GPIO_PIN_DIR_INPUT 0
 #define	GPIO_PIN_DIR_OUTPUT 1
@@ -12,6 +11,13 @@
 #define	GPIO_PIN_PULL_DOWN 0
 #define	GPIO_PIN_PULL_UP 1
 #define	GPIO_PIN_PULL_DISABLE 2
+
+/* define EINT constant */
+#define	GPIO_PIN_IRQ_RISING              HAL_EINT_EDGE_RISING
+#define	GPIO_PIN_IRQ_FALLING             HAL_EINT_EDGE_FALLING
+#define	GPIO_PIN_IRQ_HIGH                HAL_EINT_LEVEL_HIGH
+#define	GPIO_PIN_IRQ_LOW                 HAL_EINT_LEVEL_LOW
+#define	GPIO_PIN_IRQ_FALLING_AND_RISING  HAL_EINT_EDGE_FALLING_AND_RISING
 
 #define	GPIO_PIN_INTR_LO_LEVEL 0
 #define	GPIO_PIN_INTR_HI_LEVEL 1
@@ -27,8 +33,6 @@ typedef struct _machine_pin_obj_t {
 	hal_eint_number_t eint_num;
 	hal_adc_channel_t adc_ch;
 } machine_pin_obj_t;
-
-extern const mp_obj_type_t machine_pin_type;
 
 void machine_pins_init(void);
 void machine_pins_deinit(void);
