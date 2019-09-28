@@ -75,6 +75,8 @@
 #define LWIP_ND6_RETRANS_TIMER          200
 #endif
 
+// -- onionys add
+#define LWIP_IGMP                       1
 #define ETH_PAD_SIZE    0
 
 
@@ -105,7 +107,9 @@
 /* MEM_SIZE: the size of the heap memory. If the application will send
 a lot of data that needs to be copied, this should be set high. */
 #if defined(MTK_WIFI_TGN_VERIFY_ENABLE) && !defined(MTK_HOMEKIT_ENABLE)
-#define MEM_SIZE                (100 * 1024)
+// #define MEM_SIZE                (100 * 1024)    
+// -- onionys modify
+#define MEM_SIZE                (70* 1024)
 #else
 #define MEM_SIZE                (36 * 1024)
 #endif
@@ -130,13 +134,15 @@ a lot of data that needs to be copied, this should be set high. */
 #define MEMP_NUM_PBUF           8
 /* MEMP_NUM_UDP_PCB: the number of UDP protocol control blocks. One
    per active UDP "connection". */
-#define MEMP_NUM_UDP_PCB        8
+// #define MEMP_NUM_UDP_PCB        8
+// --- onionys modify
+#define MEMP_NUM_UDP_PCB        4
 /* MEMP_NUM_TCP_PCB: the number of simulatenously active TCP
    connections. */
 #define MEMP_NUM_TCP_PCB        32   //8 original
 /* MEMP_NUM_TCP_PCB_LISTEN: the number of listening TCP
    connections. */
-#define MEMP_NUM_TCP_PCB_LISTEN 32  //16 original
+#define MEMP_NUM_TCP_PCB_LISTEN 16  //16 original
 /* MEMP_NUM_TCP_SEG: the number of simultaneously queued TCP
    segments. */
 #define MEMP_NUM_TCP_SEG        255

@@ -68,6 +68,10 @@ void lwip_net_ready(void);
 */
 uint8_t wifi_set_opmode(uint8_t target_mode);
 
+bool check_is_ip_ready();
+void set_ip_ready_flag();
+void unset_ip_ready_flag();
+
 #ifdef __cplusplus
 }
 #endif

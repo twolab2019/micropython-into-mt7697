@@ -236,9 +236,13 @@ void mp_task(void *pvParameters)
     pyexec_event_repl_init();
     for (;;) {
         int c = mp_hal_stdin_rx_chr();
-        if (pyexec_event_repl_process_char(c)) {
-            break;
-        }
+		int res = pyexec_event_repl_process_char(c);
+        if (res==0) {
+        }else if (res == PYEXEC_FORCED_EXIT){
+			software_reset();
+		}else{
+			break;
+		}
     }
     #else
     pyexec_friendly_repl();
@@ -274,6 +278,7 @@ int main(void)
    // SysInitStatus_Set();
     int stack_dummy;
     stack_top = (char*)&stack_dummy;
+
     task_res = xTaskCreate(
 		mp_task,
 		"mp_task",

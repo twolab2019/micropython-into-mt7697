@@ -9,7 +9,7 @@ MTK_LWIP_ENABLE                     = y
 MTK_WIFI_WPS_ENABLE                 = n
 MTK_WIFI_TGN_VERIFY_ENABLE          = y
 MTK_WIFI_REPEATER_ENABLE            = y
-MTK_WIFI_PRIVILEGE_ENABLE           = y
+MTK_WIFI_PRIVILEGE_ENABLE           = n
 MTK_MINICLI_ENABLE                  = n
 
 # bt module enable
