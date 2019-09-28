@@ -42,18 +42,24 @@
 
 
 
+extern const unsigned int _flash_fs_start; // defined in mt7697_flash.ld
+extern const unsigned int _flash_fs_end;   // defined in mt7697_flash.ld
+extern const unsigned int _flash_fs_len;   // defined in mt7697_flash.ld
+//
 #define FLASH_FLAG_DIRTY        (1)
 #define FLASH_FLAG_FORCE_WRITE  (2)
 #define FLASH_FLAG_ERASED       (4)
-// -- depending mt7687_flash.ld file FLASH_FS 
-// mt7687_flash.ld: FLASH_FS : 408 * 1024 / 512 = 816
-#define FLASH_MEM_SEG1_NUM_BLOCKS (816)
+// -- depending ld file FLASH_FS
+// #define FLASH_MEM_SEG1_NUM_BLOCKS (816)
+#define FLASH_MEM_SEG1_NUM_BLOCKS (((unsigned int)(&_flash_fs_len))/(FLASH_BLOCK_SIZE))
 #define FLASH_MEM_SEG1_START_ADDR HAL_FLASH_FS_START
-#define FLASH_BUFF_SIZE 4096
+#define FLASH_BUFF_SIZE 4096 // FLASH_BLOCK_SIZE * 4
 
 static void flash_bdev_irq_handler(void);
+static bool _flash_bdev_sync();
 
 uint8_t _flash_buff[FLASH_BUFF_SIZE];
+uint32_t _flash_cached_region_start_addr = 0;
 
 int32_t flash_bdev_ioctl(uint32_t op, uint32_t arg) {
     (void)arg;
@@ -72,10 +78,11 @@ int32_t flash_bdev_ioctl(uint32_t op, uint32_t arg) {
             flash_bdev_irq_handler();
             return 0;
 
-        case BDEV_IOCTL_SYNC: {
+        case BDEV_IOCTL_SYNC:
+            _flash_bdev_sync();
             flash_bdev_irq_handler();
             return 0;
-        }
+
     }
     return -MP_EINVAL;
 }
@@ -97,45 +104,61 @@ static uint32_t convert_block_to_flash_addr(uint32_t block) {
 }
 
 static void flash_bdev_irq_handler(void) {
-#ifdef HAL_CACHE_MODULE_ENABLED
-    hal_cache_invalidate_all_cache_lines();
-#endif
+//  undeveloped
+}
+
+static bool _flash_bdev_sync(){
+
+	if(_flash_cached_region_start_addr == 0){
+		return true;
+	}
+	if(_flash_cached_region_start_addr & 0x0fff != 0){
+		return false;
+	}
+	if(HAL_FLASH_STATUS_OK != hal_flash_erase(_flash_cached_region_start_addr, HAL_FLASH_BLOCK_4K)){
+		return false;
+	}
+	if(HAL_FLASH_STATUS_OK != hal_flash_write(_flash_cached_region_start_addr, _flash_buff, 4096)){
+		return false;
+	}
+	_flash_cached_region_start_addr = 0;
+	return true;
 }
 
 bool flash_bdev_readblock(uint8_t *dest, uint32_t block) {
     uint32_t flash_addr = convert_block_to_flash_addr(block);
-    
+
 	if(HAL_FLASH_STATUS_OK != hal_flash_read(flash_addr, dest, FLASH_BLOCK_SIZE)){
-		printf("[hal flash read][flash bdev readblock][error]\r\n");
+		printf("[flash bdev readblock:%lu][error]\r\n",block);
 		return false;
 	}
     return true;
 }
 bool flash_bdev_writeblock(const uint8_t *src, uint32_t block) {
     uint32_t flash_addr = convert_block_to_flash_addr(block);
-	uint32_t base_addr_start = flash_addr & ~((uint32_t)0xfff);
-	uint32_t index_start = flash_addr - base_addr_start;
-	uint32_t i = 0;
+    uint32_t base_addr_start = flash_addr & ~((uint32_t)0xfff);
+    uint32_t index_start = flash_addr - base_addr_start;
+    uint32_t i = 0;
+
+	/* check if cached */
+	if(base_addr_start != _flash_cached_region_start_addr){
+		if(false == _flash_bdev_sync()){
+			return false;
+		}
+
+		_flash_cached_region_start_addr = base_addr_start;
+		if(HAL_FLASH_STATUS_OK != hal_flash_read(_flash_cached_region_start_addr, _flash_buff, FLASH_BUFF_SIZE)){
+			return false;
+		}
+	}
 
 	if(flash_addr == -1){
 		// bad block number
 		return false;
 	}
 
-	if(HAL_FLASH_STATUS_OK != hal_flash_read(base_addr_start, _flash_buff, FLASH_BUFF_SIZE)){
-		printf("[hal flash read][error]\r\n");
-		return false;
-	}
 	for(i = 0;i < FLASH_BLOCK_SIZE; i++){
 		_flash_buff[index_start + i] = *(src+i);
-	}
-	if(HAL_FLASH_STATUS_OK != hal_flash_erase(base_addr_start, HAL_FLASH_BLOCK_4K)){
-		printf("[hal flash erase][error]\r\n");
-		return false;
-	}
-	if(HAL_FLASH_STATUS_OK != hal_flash_write(base_addr_start, _flash_buff, FLASH_BUFF_SIZE)){
-		printf("[hal flash write][error]\r\n");
-		return false;
 	}
 
 	return true;
