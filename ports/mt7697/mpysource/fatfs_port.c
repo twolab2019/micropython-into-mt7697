@@ -24,19 +24,25 @@
  * THE SOFTWARE.
  */
 
+#include "hal.h"
+
 #include "py/runtime.h"
 #include "lib/oofatfs/ff.h"
 
-MP_WEAK DWORD get_fattime(void) {
-    #if MICROPY_HW_ENABLE_RTC
-    rtc_init_finalise();
-    RTC_TimeTypeDef time;
-    RTC_DateTypeDef date;
-    HAL_RTC_GetTime(&RTCHandle, &time, RTC_FORMAT_BIN);
-    HAL_RTC_GetDate(&RTCHandle, &date, RTC_FORMAT_BIN);
-    return ((2000 + date.Year - 1980) << 25) | ((date.Month) << 21) | ((date.Date) << 16) | ((time.Hours) << 11) | ((time.Minutes) << 5) | (time.Seconds / 2);
-    #else
-    // Jan 1st, 2018 at midnight. Not sure what timezone.
-    return ((2018 - 1980) << 25) | ((1) << 21) | ((1) << 16) | ((0) << 11) | ((0) << 5) | (0 / 2);
-    #endif
+#include "systick.h"
+#include "machine_rtc.h"
+
+
+DWORD get_fattime(void) {
+    hal_rtc_time_t now;
+    if(HAL_RTC_STATUS_OK != hal_rtc_get_time(&now)){
+        nlr_raise(mp_obj_new_exception_msg(&mp_type_OSError, "HAL RTC gets time error!!"));
+    }
+    return ( (uint32_t) (_RTC_BASE_YEAR + now.rtc_year - 1980) << 25 ) |
+           ( (uint32_t) now.rtc_mon  << 21 ) |
+           ( (uint32_t) now.rtc_day  << 16 ) |
+           ( (uint32_t) now.rtc_hour << 11)  |
+           ( (uint32_t) now.rtc_min  <<  5)  |
+           ( (uint32_t) now.rtc_sec   / 2 )  ;
+
 }
