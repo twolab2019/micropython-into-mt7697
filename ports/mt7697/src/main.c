@@ -288,6 +288,7 @@ int main(void)
    // SysInitStatus_Set();
     int stack_dummy;
     stack_top = (char*)&stack_dummy;
+
     task_res = xTaskCreate(
 		mp_task,
 		"mp_task",
