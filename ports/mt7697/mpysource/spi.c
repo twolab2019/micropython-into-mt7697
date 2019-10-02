@@ -217,8 +217,6 @@ void spim_send_data_to_spis(void)
 {
     uint32_t i;
 
-    printf("spim_send_data_to_spis() begin\r\n");
-
     /* Step1: wait SPI slave to be idle status. */
     spim_wait_slave_idle();
 
@@ -245,8 +243,6 @@ void spim_send_data_to_spis(void)
     spim_write_slave_command(false);
     spim_active_slave_irq();
     spim_wait_slave_ack();
-
-    printf("spim_send_data_to_spis() pass\r\n\r\n");
 }
 
 
@@ -258,8 +254,6 @@ void spim_send_data_to_spis(void)
 void spim_receive_data_from_spis(void)
 {
     uint32_t i, data;
-
-    printf("spim_receive_data_from_spis() begin\r\n");
 
     /* Step1: wait SPI slave to be idle status. */
     spim_wait_slave_idle();
@@ -279,7 +273,6 @@ void spim_receive_data_from_spis(void)
         spim_wait_slave_idle();
         data = spim_read_slave_data();
         if (data != SPI_TEST_RX_DATA_PATTERN) {
-            printf("spim_read_slave_data fail: i=%d, data=%x\r\n", (int)i, (unsigned int)data);
             return;
         }
     }
@@ -291,7 +284,6 @@ void spim_receive_data_from_spis(void)
     spim_wait_slave_idle();
     spim_active_slave_irq();
 
-    printf("spim_receive_data_from_spis() pass\r\n\r\n");
 }
 
 /**
@@ -303,17 +295,16 @@ void spi_master_transfer_data_two_boards_example(void)
 {
     hal_spi_master_config_t spi_config;
 
-    printf("---spi_master_transfer_data_two_boards_example begins---\r\n\r\n");
 
     /*Step1: init GPIO, set SPIM pinmux(if EPT tool hasn't been used to configure the related pinmux).*/
-    hal_gpio_init(SPIM_PIN_NUMBER_CS);
-    hal_gpio_init(SPIM_PIN_NUMBER_CLK);
-    hal_gpio_init(SPIM_PIN_NUMBER_MOSI);
-    hal_gpio_init(SPIM_PIN_NUMBER_MISO);
-    hal_pinmux_set_function(SPIM_PIN_NUMBER_CS, SPIM_PIN_FUNC_CS);
-    hal_pinmux_set_function(SPIM_PIN_NUMBER_CLK, SPIM_PIN_FUNC_CLK);
-    hal_pinmux_set_function(SPIM_PIN_NUMBER_MOSI, SPIM_PIN_FUNC_MOSI);
-    hal_pinmux_set_function(SPIM_PIN_NUMBER_MISO, SPIM_PIN_FUNC_MISO);
+    hal_gpio_init(SPI_PIN_NUMBER_CS);
+    hal_gpio_init(SPI_PIN_NUMBER_CLK);
+    hal_gpio_init(SPI_PIN_NUMBER_MOSI);
+    hal_gpio_init(SPI_PIN_NUMBER_MISO);
+    hal_pinmux_set_function(SPI_PIN_NUMBER_CS, SPIM_PIN_FUNC_CS);
+    hal_pinmux_set_function(SPI_PIN_NUMBER_CLK, SPIM_PIN_FUNC_CLK);
+    hal_pinmux_set_function(SPI_PIN_NUMBER_MOSI, SPIM_PIN_FUNC_MOSI);
+    hal_pinmux_set_function(SPI_PIN_NUMBER_MISO, SPIM_PIN_FUNC_MISO);
 
     /*Step2: initialize SPI master. */
     spi_config.bit_order = HAL_SPI_MASTER_MSB_FIRST;
@@ -322,7 +313,6 @@ void spi_master_transfer_data_two_boards_example(void)
     spi_config.phase = HAL_SPI_MASTER_CLOCK_PHASE0;
     spi_config.polarity = HAL_SPI_MASTER_CLOCK_POLARITY0;
     if (HAL_SPI_MASTER_STATUS_OK != hal_spi_master_init(SPI_TEST_MASTER, &spi_config)) {
-        printf("hal_spi_master_init fail\r\n");
         return;
     } else {
         printf("hal_spi_master_init pass\r\n");
@@ -336,15 +326,13 @@ void spi_master_transfer_data_two_boards_example(void)
 
     /* Step5: deinit spi master and related GPIO. */
     if (HAL_SPI_MASTER_STATUS_OK != hal_spi_master_deinit(SPI_TEST_MASTER)) {
-        printf("hal_spi_master_deinit fail\r\n");
         return;
     }
-    hal_gpio_deinit(SPIM_PIN_NUMBER_CS);
-    hal_gpio_deinit(SPIM_PIN_NUMBER_CLK);
-    hal_gpio_deinit(SPIM_PIN_NUMBER_MOSI);
-    hal_gpio_deinit(SPIM_PIN_NUMBER_MISO);
+    hal_gpio_deinit(SPI_PIN_NUMBER_CS);
+    hal_gpio_deinit(SPI_PIN_NUMBER_CLK);
+    hal_gpio_deinit(SPI_PIN_NUMBER_MOSI);
+    hal_gpio_deinit(SPI_PIN_NUMBER_MISO);
 
-    printf("---spi_master_transfer_data_two_boards_example ends---\r\n");
 }
 
 volatile bool transfer_data_finished = false;
@@ -438,7 +426,7 @@ void spis_user_callback(void *from_upy_data)
                 transfer_data_finished = true;
             break;
         default:
-            printf("spis_user_callback detect error command\r\n");
+            break;
     }
 }
 
