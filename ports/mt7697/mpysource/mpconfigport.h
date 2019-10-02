@@ -8,6 +8,10 @@
 // will still be able to execute pre-compiled scripts, compiled with mpy-cross.
 
 
+
+
+#define MICROPY_ENABLE_COMPILER     (1)
+#define MICROPY_REPL_EVENT_DRIVEN   (1)
 // memory allocation policies
 #define MICROPY_ALLOC_PATH_MAX      (128)
 
@@ -97,6 +101,7 @@
 #ifndef MICROPY_PY_THREAD
 #define MICROPY_PY_THREAD           (0)
 #endif
+#define MICROPY_MODULE_BUILTIN_INIT        (1)
 
 // extended modules
 #define MICROPY_PY_UCTYPES          (0)
@@ -181,7 +186,8 @@ typedef long mp_off_t;
 extern const struct _mp_obj_module_t mp_module_machine;
 extern const struct _mp_obj_module_t mp_module_uos;
 extern const struct _mp_obj_module_t mp_module_utime;
-extern const struct _mp_obj_module_t mp_module_network;
+extern const struct _mp_obj_module_t machine_module_network;
+extern const struct _mp_obj_module_t mp_module_usocket;
 
 #define MP_PLAT_PRINT_STRN(str, len) mp_hal_stdout_tx_strn_cooked(str, len)
 
@@ -240,7 +246,8 @@ extern const struct _mp_obj_module_t mp_module_network;
     { MP_ROM_QSTR(MP_QSTR_umachine), MP_ROM_PTR(&mp_module_machine) }, \
     { MP_ROM_QSTR(MP_QSTR_uos), MP_ROM_PTR(&mp_module_uos) }, \
     { MP_ROM_QSTR(MP_QSTR_utime), MP_ROM_PTR(&mp_module_utime) }, \
-    { MP_ROM_QSTR(MP_QSTR_network), MP_ROM_PTR(&mp_module_network) }, \
+    { MP_ROM_QSTR(MP_QSTR_network), MP_ROM_PTR(&machine_module_network) }, \
+    { MP_ROM_QSTR(MP_QSTR_usocket), MP_ROM_PTR(&mp_module_usocket) }, \
 
 
 #define MICROPY_PORT_BUILTIN_MODULE_WEAK_LINKS \

@@ -52,6 +52,8 @@
 #include "network_default_config.h"
 #include "wifi_private_api.h"
 
+// #include "mydebug.h"
+
 static SemaphoreHandle_t wifi_connected;
 
 static SemaphoreHandle_t ip_ready;
@@ -60,6 +62,24 @@ static void ip_ready_callback(struct netif *netif);
 
 static int32_t wifi_station_port_secure_event_handler(wifi_event_t event, uint8_t *payload, uint32_t length);
 static int32_t wifi_station_disconnected_event_handler(wifi_event_t event, uint8_t *payload, uint32_t length);
+
+/*
+ *
+ * */
+static bool is_ip_ready_flag = false; // add by onionys
+
+bool check_is_ip_ready(){
+	return is_ip_ready_flag;
+}
+
+void set_ip_ready_flag(){
+	is_ip_ready_flag = true;
+}
+
+void unset_ip_ready_flag(){
+	is_ip_ready_flag = false;
+}
+
 
 /**
   * @brief  dhcp got ip will callback this function.
@@ -72,10 +92,11 @@ static void ip_ready_callback(struct netif *netif)
         char ip_addr[17] = {0};
         if (NULL != inet_ntoa(netif->ip_addr)) {
             strcpy(ip_addr, inet_ntoa(netif->ip_addr));
+			//D_WIFI_PRINTF("*********[DHCP got IP][%s]\r\n",ip_addr);
             LOG_I(common, "************************");
             LOG_I(common, "DHCP got IP:%s", ip_addr);
             LOG_I(common, "************************");
-
+			set_ip_ready_flag();
             xSemaphoreGive(ip_ready);
         } else {
             LOG_E(common, "DHCP got Failed");
@@ -163,12 +184,15 @@ void lwip_network_init(uint8_t opmode)
     lwip_tcpip_config_t tcpip_config = {0, {0}, {0}, {0}, {0}, {0}, {0}};
 
     if (0 != tcpip_config_init(&tcpip_config)) {
+		//D_WIFI_PRINTF("tcpip config init fail\n\r");
         LOG_E(common, "tcpip config init fail");
         return;
     }
     wifi_connected = xSemaphoreCreateBinary();
     if (dhcp_config_init() == STA_IP_MODE_DHCP) {
+		//D_WIFI_PRINTF("[dhcp][STA IP MODE HDCP]\r\n");
         ip_ready = xSemaphoreCreateBinary();
+		unset_ip_ready_flag();
     }
     lwip_tcpip_init(&tcpip_config, opmode);
 }
@@ -182,10 +206,12 @@ void lwip_net_start(uint8_t opmode)
 {
     struct netif *sta_if;
     struct netif *ap_if;
+	//D_WIFI_PRINTF("[lwip_net_start]\r\n");
 
     switch (opmode) {
         case WIFI_MODE_STA_ONLY:
         case WIFI_MODE_REPEATER:
+			//D_WIFI_PRINTF("[MODE][STA]\r\n");
             wifi_connection_register_event_handler(WIFI_EVENT_IOT_PORT_SECURE, wifi_station_port_secure_event_handler);
             wifi_connection_register_event_handler(WIFI_EVENT_IOT_DISCONNECTED, wifi_station_disconnected_event_handler);
             if (dhcp_config_init() == STA_IP_MODE_DHCP) {
@@ -193,9 +219,11 @@ void lwip_net_start(uint8_t opmode)
                 netif_set_default(sta_if);
                 netif_set_status_callback(sta_if, ip_ready_callback);
                 dhcp_start(sta_if);
+				//D_WIFI_PRINTF("[DHCP START]\r\n");
             }
             break;
         case WIFI_MODE_AP_ONLY: {
+			//D_WIFI_PRINTF("[MODE][AP]\r\n");
             dhcpd_settings_t dhcpd_settings = {{0}, {0}, {0}, {0}, {0}, {0}, {0}};
             lwip_tcpip_config_t tcpip_config = {0, {0}, {0}, {0}, {0}, {0}, {0}};
 
