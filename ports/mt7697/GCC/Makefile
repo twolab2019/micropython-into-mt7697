@@ -157,7 +157,6 @@ APP_FILES += $(addprefix $(APP_MP_PATH_SRC)/,\
 			 modmachine.c \
 			 spi.c \
 			 machine_hw_spi.c \
-			 machine_hw_i2c.c \
 			 modnetwork.c \
 			 modsocket.c \
 			 systick.c \
@@ -201,6 +200,7 @@ INC += -I$(APP_PATH)/mpysource
 INC += -I.
 INC += -I$(TOP)
 INC += -I$(BUILD)
+INC += -Ilwip_inc
 OBJ = $(PY_O) #$(addprefix $(BUILD)/, $(SRC_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_LIB:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(APP_MODS_SRC_C:.c=.o))
@@ -228,13 +228,15 @@ endif
 SRC_LIB = $(addprefix lib/,\
 	libc/string0.c \
 	oofatfs/ff.c \
-	oofatfs/option/unicode.c \
+	oofatfs/ffunicode.c \
 	mp-readline/readline.c \
 	netutils/netutils.c \
+	netutils/trace.c \
 	timeutils/timeutils.c \
 	utils/pyexec.c \
 	utils/interrupt_char.c \
 	utils/sys_stdio_mphal.c \
+	utils/mpirq.c \
 	)
 
 SRC_LIB += $(addprefix drivers/,\

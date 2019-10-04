@@ -126,7 +126,7 @@ MP_NOINLINE STATIC bool init_flash_fs(uint reset_mode) {
         // no filesystem, or asked to reset it, so create a fresh one
         LOG_I(template, "[fs][fs not found!]");
 
-        uint8_t working_buf[_MAX_SS];
+        uint8_t working_buf[FF_MAX_SS];
         LOG_I(template, "[fs][low level operation][mkfs]");
         res = f_mkfs(&vfs_fat->fatfs, FM_FAT, 0, working_buf, sizeof(working_buf));
         if (res == FR_OK) {
