@@ -157,6 +157,7 @@ APP_FILES += $(addprefix $(APP_MP_PATH_SRC)/,\
 			 modmachine.c \
 			 spi.c \
 			 machine_hw_spi.c \
+			 machine_hw_i2c.c \
 			 modnetwork.c \
 			 modsocket.c \
 			 systick.c \
