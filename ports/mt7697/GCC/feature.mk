@@ -21,3 +21,5 @@ MTK_BT_AVRCP_ENH_ENABLE             = n
 MTK_BT_A2DP_ENABLE                  = n
 MTK_BT_PBAP_ENABLE                  = n
 MTK_BT_SPP_ENABLE                   = n
+
+MTK_MBEDTLS_CONFIG_FILE             = config-mtk-basic.h

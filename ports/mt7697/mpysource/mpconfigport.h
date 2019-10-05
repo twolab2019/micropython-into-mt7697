@@ -86,19 +86,21 @@
 #define MICROPY_PY_MICROPYTHON_MEM_INFO (0)
 #define MICROPY_PY_ARRAY_SLICE_ASSIGN (1)
 #define MICROPY_PY_ARRAY              (1)
-#define MICROPY_PY_COLLECTIONS_DEQUE (0)
-#define MICROPY_PY_COLLECTIONS_ORDEREDDICT (0)
+#define MICROPY_PY_COLLECTIONS       (1)
+#define MICROPY_PY_COLLECTIONS_DEQUE (1)
+#define MICROPY_PY_COLLECTIONS_ORDEREDDICT (1)
 #define MICROPY_PY_MATH_SPECIAL_FUNCTIONS (1)
 #define MICROPY_PY_MATH_FACTORIAL   (1)
 #define MICROPY_PY_CMATH            (1)
-#define MICROPY_PY_IO               (0)
-#define MICROPY_PY_IO_IOBASE        (0)
+#define MICROPY_PY_IO               (1)
+#define MICROPY_PY_IO_IOBASE        (1)
 #define MICROPY_PY_IO_FILEIO        (MICROPY_VFS_FAT) // because mp_type_fileio/textio point to fatfs impl
+#define MICROPY_PY_STRUCT           (1)
 #define MICROPY_PY_SYS_MAXSIZE      (1)
 #define MICROPY_PY_SYS_EXIT         (1)
 #define MICROPY_PY_SYS_STDFILES     (1)
 #define MICROPY_PY_SYS_STDIO_BUFFER (1)
-#define MICROPY_PY_UERRNO           (0)
+#define MICROPY_PY_UERRNO           (1)
 #ifndef MICROPY_PY_THREAD
 #define MICROPY_PY_THREAD           (0)
 #endif
@@ -106,16 +108,20 @@
 
 // extended modules
 #define MICROPY_PY_UCTYPES          (0)
-#define MICROPY_PY_UZLIB            (0)
-#define MICROPY_PY_UJSON            (0)
-#define MICROPY_PY_URE              (0)
-#define MICROPY_PY_URE_SUB          (0)
-#define MICROPY_PY_UHEAPQ           (0)
-#define MICROPY_PY_UHASHLIB         (0)
-#define MICROPY_PY_UBINASCII        (0)
+#define MICROPY_PY_UZLIB            (1)
+#define MICROPY_PY_UJSON            (1)
+#define MICROPY_PY_URE              (1)
+#define MICROPY_PY_URE_SUB          (1)
+#define MICROPY_PY_UHEAPQ           (1)
+#define MICROPY_PY_UHASHLIB         (1)
+#define MICROPY_PY_UHASHLIB_SHA1    (1)
+#define MICROPY_PY_UHASHLIB_SHA256          (1)
+#define MICROPY_PY_UHASHLIB_MD5             (1)
+#define MICROPY_PY_UCRYPTOLIB               (0)
+#define MICROPY_PY_UBINASCII        (1)
 #define MICROPY_PY_URANDOM          (0)
 #define MICROPY_PY_URANDOM_EXTRA_FUNCS (0)
-#define MICROPY_PY_USELECT          (0)
+#define MICROPY_PY_USELECT          (1)
 #define MICROPY_PY_UTIMEQ           (1)
 #define MICROPY_PY_UTIME_MP_HAL     (1)
 #define MICROPY_PY_OS_DUPTERM       (0)
@@ -140,6 +146,10 @@
 #endif
 // #define MICROPY_HW_SOFTSPI_MIN_DELAY (0)
 // #define MICROPY_HW_SOFTSPI_MAX_BAUDRATE (HAL_RCC_GetSysClockFreq() / 48)
+#define MICROPY_PY_USSL                     (1)
+#define MICROPY_SSL_AXTLS                   (0)
+#define MICROPY_SSL_MBEDTLS                 (1)
+#define MICROPY_PY_USSL_FINALISER           (1)
 #define MICROPY_PY_FRAMEBUF         (0)
 #ifndef MICROPY_PY_USOCKET
 #define MICROPY_PY_USOCKET          (0)
@@ -244,15 +254,31 @@ extern const struct _mp_obj_module_t mp_module_usocket;
 
 
 #define MICROPY_PORT_BUILTIN_MODULES \
-    { MP_ROM_QSTR(MP_QSTR_umachine), MP_ROM_PTR(&mp_module_machine) }, \
-    { MP_ROM_QSTR(MP_QSTR_uos), MP_ROM_PTR(&mp_module_uos) }, \
-    { MP_ROM_QSTR(MP_QSTR_utime), MP_ROM_PTR(&mp_module_utime) }, \
-    { MP_ROM_QSTR(MP_QSTR_network), MP_ROM_PTR(&machine_module_network) }, \
-    { MP_ROM_QSTR(MP_QSTR_usocket), MP_ROM_PTR(&mp_module_usocket) }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_umachine), MP_ROM_PTR(&mp_module_machine) }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_uos), MP_ROM_PTR(&mp_module_uos) }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_utime), MP_ROM_PTR(&mp_module_utime) }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_network), MP_ROM_PTR(&machine_module_network) }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_usocket), MP_ROM_PTR(&mp_module_usocket) }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_uhashlib), (mp_obj_t)&mp_module_uhashlib }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_machine), MP_ROM_PTR(&mp_module_machine) }, \
 
 
 #define MICROPY_PORT_BUILTIN_MODULE_WEAK_LINKS \
-    { MP_ROM_QSTR(MP_QSTR_machine), MP_ROM_PTR(&mp_module_machine) }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_ubinascii), (mp_obj_t)&mp_module_ubinascii }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_ucollections), MP_ROM_PTR(&mp_module_collections) }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_errno), (mp_obj_t)&mp_module_uerrno }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_uhashlib), (mp_obj_t)&mp_module_uhashlib }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_heapq), (mp_obj_t)&mp_module_uheapq }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_io), (mp_obj_t)&mp_module_io }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_json), (mp_obj_t)&mp_module_ujson }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_uos), MP_ROM_PTR(&mp_module_uos) }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_re), (mp_obj_t)&mp_module_ure }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_select), (mp_obj_t)&mp_module_uselect }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_ssl), (mp_obj_t)&mp_module_ussl }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_struct), (mp_obj_t)&mp_module_ustruct }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_time), MP_ROM_PTR(&mp_module_utime) }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_zlib), (mp_obj_t)&mp_module_uzlib }, \
+
 
 // extra constants
 #define MICROPY_PORT_CONSTANTS \

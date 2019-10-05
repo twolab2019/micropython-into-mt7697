@@ -81,6 +81,8 @@ LD      = $(BINPATH)/arm-none-eabi-ld
 -include $(SOURCE_DIR)/config/board/$(BOARD_CONFIG)/board.mk
 # EPT Config
 -include $(SOURCE_DIR)/driver/board/linkit7697_hdk/ept/module.mk
+# SSL Config
+-include $(SOURCE_DIR)/middleware/third_party/mbedtls/module.mk
 
 # RTOS source files
 include $(SOURCE_DIR)/kernel/rtos/FreeRTOS/module.mk
@@ -179,6 +181,7 @@ MY_S_FILES += $(APP_MP_PATH_SRC)/gchelper.s
 CFLAGS += -I$(SOURCE_DIR)/driver/chip/mt7687/inc
 CFLAGS += -I$(SOURCE_DIR)/driver/chip/inc
 CFLAGS += -I$(SOURCE_DIR)/middleware/MTK/wifi_service/combo/inc
+CFLAGS += -I$(SOURCE_DIR)//middleware/third_party/mbedtls/include/mbedtls
 CFLAGS += -I$(APP_PATH)/inc
 CFLAGS += -I$(APP_PATH)/mpysource
 CFLAGS += -I$(SOURCE_DIR)/driver/CMSIS/Include
@@ -205,6 +208,7 @@ INC += -Ilwip_inc
 OBJ = $(PY_O) #$(addprefix $(BUILD)/, $(SRC_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_LIB:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(APP_MODS_SRC_C:.c=.o))
+OBJ += $(addprefix $(BUILD)/, $(SRC_LIBM:.c=.o))
 
 CFLAGS += $(INC)
 
@@ -244,6 +248,87 @@ SRC_LIB += $(addprefix drivers/,\
 		   bus/softspi.c \
 		   bus/softqspi.c \
 		   )
+
+
+ifeq ($(MICROPY_FLOAT_IMPL),double)
+SRC_LIBM = $(addprefix lib/libm_dbl/,\
+	__cos.c \
+	__expo2.c \
+	__fpclassify.c \
+	__rem_pio2.c \
+	__rem_pio2_large.c \
+	__signbit.c \
+	__sin.c \
+	__tan.c \
+	acos.c \
+	acosh.c \
+	asin.c \
+	asinh.c \
+	atan.c \
+	atan2.c \
+	atanh.c \
+	ceil.c \
+	cos.c \
+	cosh.c \
+	copysign.c \
+	erf.c \
+	exp.c \
+	expm1.c \
+	floor.c \
+	fmod.c \
+	frexp.c \
+	ldexp.c \
+	lgamma.c \
+	log.c \
+	log10.c \
+	log1p.c \
+	modf.c \
+	nearbyint.c \
+	pow.c \
+	rint.c \
+	scalbn.c \
+	sin.c \
+	sinh.c \
+	sqrt.c \
+	tan.c \
+	tanh.c \
+	tgamma.c \
+	trunc.c \
+	)
+else
+SRC_LIBM = $(addprefix lib/libm/,\
+	math.c \
+	acoshf.c \
+	asinfacosf.c \
+	asinhf.c \
+	atan2f.c \
+	atanf.c \
+	atanhf.c \
+	ef_rem_pio2.c \
+	erf_lgamma.c \
+	fmodf.c \
+	kf_cos.c \
+	kf_rem_pio2.c \
+	kf_sin.c \
+	kf_tan.c \
+	log1pf.c \
+	nearbyintf.c \
+	sf_cos.c \
+	sf_erf.c \
+	sf_frexp.c \
+	sf_ldexp.c \
+	sf_modf.c \
+	sf_sin.c \
+	sf_tan.c \
+	wf_lgamma.c \
+	wf_tgamma.c \
+	)
+ifeq ($(MCU_SERIES),f0)
+SRC_LIBM += lib/libm/ef_sqrt.c
+else
+SRC_LIBM += lib/libm/thumb_vfp_sqrtf.c
+endif
+endif
 
 SRC_QSTR += $(APP_MODS_SRC_C) $(APP_FILES) $(SRC_LIB)
 
