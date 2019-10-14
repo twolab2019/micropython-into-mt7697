@@ -82,6 +82,7 @@ const machine_pin_obj_t machine_pin_obj[18] = {
 	{{&machine_pin_type}, HAL_GPIO_60, 17  , HAL_GPIO_60_GPIO60 , HAL_PWM_39 , HAL_GPIO_60_PWM39, 0                 , HAL_EINT_NUMBER_MAX , HAL_ADC_CHANNEL_3   }, // P17
 };
 
+machine_pin_state pin_states[18] = {0};
 
 
 void machine_pins_init(void){
@@ -89,10 +90,13 @@ void machine_pins_init(void){
 	bsp_ept_gpio_setting_init();
 }
 
-void machine_pins_deinit(void){
-	// TODO
+STATIC mp_obj_t machine_pin_deinit(mp_obj_t self_in){
+	const machine_pin_obj_t *self = self_in;
+	hal_gpio_deinit(self->pin_num);
+	pin_states[self->pin_num] = MPY_PIN_STAT_NONE;
+	return mp_const_none;
 }
-
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(machine_pin_deinit_obj, machine_pin_deinit);
 
 const machine_pin_obj_t * machine_pin_obj_from_gpio_num(hal_gpio_pin_t gpio_num){
 	int pin_obj_index = 0;
@@ -170,29 +174,35 @@ STATIC mp_obj_t machine_pin_obj_init_helper(const machine_pin_obj_t *self, size_
 	if(args[1].u_obj != mp_const_none){
 		pull = mp_obj_get_int(args[1].u_obj);
 	}
+
 	if(!(pull == GPIO_PIN_PULL_DOWN || pull == GPIO_PIN_PULL_UP || pull == GPIO_PIN_PULL_DISABLE)){
 		nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError,"invalid pull mode: %d", pull));
 	}
+
 	if(HAL_GPIO_STATUS_OK != hal_gpio_init(self->gpio_num)){
 		mp_raise_msg(&mp_type_OSError, "hal gpio init error");
 		return mp_const_none;
 	}
-
+	
 	if(HAL_PINMUX_STATUS_OK != hal_pinmux_set_function(self->gpio_num, self->gpio_pinmux_num)){
 		mp_raise_msg(&mp_type_OSError, "pinmux error");
 		return mp_const_none;
 	}
+
 
 	/* Set direction */ 
 	hal_gpio_status_t res;
 	switch(mode){
 		case GPIO_PIN_DIR_OUTPUT:
 			res = hal_gpio_set_direction(self->gpio_num, HAL_GPIO_DIRECTION_OUTPUT);
+			pin_states[self->pin_num] = MPY_PIN_STAT_GPIO_OUT;
 			break;
 		case GPIO_PIN_DIR_INPUT:
 			res = hal_gpio_set_direction(self->gpio_num, HAL_GPIO_DIRECTION_INPUT);
+			pin_states[self->pin_num] = MPY_PIN_STAT_GPIO_IN;
 			break;
 		default:
+			pin_states[self->pin_num] = MPY_PIN_STAT_NONE;
 			nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError,"invalid io mode: %d", mode));
 			return mp_const_none;
 			break;
@@ -347,8 +357,12 @@ STATIC mp_obj_t machine_pin_call(mp_obj_t self_in, size_t n_args, size_t n_kw, c
 	mp_arg_check_num(n_args, n_kw, 0, 1, false);
 	const machine_pin_obj_t *self = self_in;
 	if(n_args == 0){
-		hal_gpio_data_t val;
-		hal_gpio_get_input(self->gpio_num, &val);
+		hal_gpio_data_t val = 0;
+		if(pin_states[self->pin_num] == MPY_PIN_STAT_GPIO_IN){
+			hal_gpio_get_input(self->gpio_num, &val);
+		}else if (pin_states[self->pin_num] == MPY_PIN_STAT_GPIO_OUT){
+			hal_gpio_get_output(self->gpio_num, &val);
+		}
 		return (mp_obj_t) MP_OBJ_NEW_SMALL_INT(val);
 	} else {
 		hal_gpio_set_output(self->gpio_num, mp_obj_is_true(args[0]) ? (HAL_GPIO_DATA_HIGH):(HAL_GPIO_DATA_LOW));
@@ -384,6 +398,8 @@ STATIC const mp_rom_map_elem_t machine_pin_locals_dict_table[] = {
 	{MP_ROM_QSTR(MP_QSTR_on),           MP_ROM_PTR(&machine_pin_on_obj)},
 	{MP_ROM_QSTR(MP_QSTR_toggle),       MP_ROM_PTR(&machine_pin_toggle_obj)},
 	{MP_ROM_QSTR(MP_QSTR_irq),          MP_ROM_PTR(&machine_pin_irq_obj)},
+
+	{MP_ROM_QSTR(MP_QSTR___del__),       MP_ROM_PTR(&machine_pin_deinit_obj)},
 
 	{ MP_ROM_QSTR(MP_QSTR_IN),          MP_ROM_INT(GPIO_PIN_DIR_INPUT) },
 	{ MP_ROM_QSTR(MP_QSTR_OUT),         MP_ROM_INT(GPIO_PIN_DIR_OUTPUT) },

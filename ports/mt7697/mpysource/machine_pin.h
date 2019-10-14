@@ -34,6 +34,17 @@ typedef struct _machine_pin_obj_t {
 	hal_adc_channel_t adc_ch;
 } machine_pin_obj_t;
 
+// -- for tracing the state of the pin func
+typedef enum{
+	MPY_PIN_STAT_NONE = 0,
+	MPY_PIN_STAT_GPIO_IN,
+	MPY_PIN_STAT_GPIO_OUT,
+	MPY_PIN_STAT_PWM,
+	MPY_PIN_STAT_I2C,
+	MPY_PIN_STAT_SPI,
+	MPY_PIN_STAT_UART
+}machine_pin_state;
+
 void machine_pins_init(void);
 void machine_pins_deinit(void);
 
