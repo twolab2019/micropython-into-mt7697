@@ -441,7 +441,21 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(machine_wlan_scan_obj, machine_wlan_scan);
 /* WLAN obj method isconnected */
 
 STATIC mp_obj_t machine_wlan_isconnected(mp_obj_t self_in){
-	return (check_is_ip_ready())?(mp_const_true):(mp_const_none);
+	machine_wlan_obj_t *self = self_in;
+	if(self->opmode == WIFI_MODE_STA_ONLY){
+		uint8_t _link_status =0xff;
+		if(wifi_connection_get_link_status(&_link_status) < 0){
+	     	mp_raise_msg(&mp_type_OSError, "[ERROR][WIFI STA][wifi get link status failed!]");
+		}
+		return (_link_status == 1)?(mp_const_true):(mp_const_false);
+	}else if (self->opmode == WIFI_MODE_AP_ONLY){
+		uint8_t _number = 0;
+		wifi_sta_list_t _sta_list;
+		wifi_connection_get_sta_list(&_number, &_sta_list);
+		return mp_obj_new_bool(_number != 0);
+	}else{
+}
+return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(machine_wlan_isconnected_obj, machine_wlan_isconnected);
 

@@ -64,13 +64,6 @@
 #include "py/obj.h"
 #include "py/runtime.h"
 
-// #include "mydebug.h"
-// #include "lwip/sockets.h"
-// #include "lwip/netdb.h"
-// #include "lwip/ip4.h"
-// #include "lwip/igmp.h"
-// #include "esp_log.h"
-
 #define SOCKET_POLL_US (100000)
 
 typedef struct _socket_obj_t {
@@ -523,12 +516,10 @@ STATIC mp_obj_t socket_makefile(size_t n_args, const mp_obj_t *args) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(socket_makefile_obj, 1, 3, socket_makefile);
 
 STATIC mp_uint_t socket_stream_read(mp_obj_t self_in, void *buf, mp_uint_t size, int *errcode) {
-	//D_SOCK_PRINTF("[socket_stream_read]\n");
     return _socket_read_data(self_in, buf, size, NULL, NULL, errcode);
 }
 
 STATIC mp_uint_t socket_stream_write(mp_obj_t self_in, const void *buf, mp_uint_t size, int *errcode) {
-	//D_SOCK_PRINTF("[socket_stream_write]\n");
     socket_obj_t *sock = self_in;
     for (int i=0; i<=sock->retries; i++) {
         MP_THREAD_GIL_EXIT();
@@ -543,10 +534,8 @@ STATIC mp_uint_t socket_stream_write(mp_obj_t self_in, const void *buf, mp_uint_
 }
 
 STATIC mp_uint_t socket_stream_ioctl(mp_obj_t self_in, mp_uint_t request, uintptr_t arg, int *errcode) {
-	//D_SOCK_PRINTF("[socket_stream_ioctl]\n");
     socket_obj_t * socket = self_in;
     if (request == MP_STREAM_POLL) {
-		//D_SOCK_PRINTF("[request == MP_STREAM_POLL]\n");
         fd_set rfds; FD_ZERO(&rfds);
         fd_set wfds; FD_ZERO(&wfds);
         fd_set efds; FD_ZERO(&efds);
@@ -556,19 +545,15 @@ STATIC mp_uint_t socket_stream_ioctl(mp_obj_t self_in, mp_uint_t request, uintpt
             return MP_STREAM_ERROR;
 		}
         if (arg & MP_STREAM_POLL_RD){
-			//D_SOCK_PRINTF("\t[FD_SET(socket->fd[%d], &rfds)]\n", socket->fd);
 			FD_SET(socket->fd, &rfds);
 		}
         if (arg & MP_STREAM_POLL_WR){
-			//D_SOCK_PRINTF("\t[FD_SET(socket->fd[%d], &wfds)]\n", socket->fd);
 			FD_SET(socket->fd, &wfds);
 		}
         if (arg & MP_STREAM_POLL_HUP){
-			//D_SOCK_PRINTF("\t[FD_SET(socket->fd[%d], &efds)]\n", socket->fd);
 			FD_SET(socket->fd, &efds);
 		}
 
-		//D_SOCK_PRINTF("\t[select]\n");
         int r = select((socket->fd)+1, &rfds, &wfds, &efds, &timeout);
         if (r < 0) {
             *errcode = MP_EIO;
@@ -579,34 +564,26 @@ STATIC mp_uint_t socket_stream_ioctl(mp_obj_t self_in, mp_uint_t request, uintpt
         if (FD_ISSET(socket->fd, &rfds)) ret |= MP_STREAM_POLL_RD;
         if (FD_ISSET(socket->fd, &wfds)) ret |= MP_STREAM_POLL_WR;
         if (FD_ISSET(socket->fd, &efds)) ret |= MP_STREAM_POLL_HUP;
-		//D_SOCK_PRINTF("\t[return ret:%u]\n",ret);
         return ret;
     } else if (request == MP_STREAM_CLOSE) {
-		//D_SOCK_PRINTF("[request == MP_STREAM_CLOSE]\n");
         if (socket->fd >= 0) {
             #if MICROPY_PY_USOCKET_EVENTS
             if (socket->events_callback != MP_OBJ_NULL) {
-				//D_SOCK_PRINTF("\t[socket events callback != MP_OBJ_NULL]\n");
                 usocket_events_remove(socket);
-				//D_SOCK_PRINTF("\t[usocket_events_remove]\n");
                 socket->events_callback = MP_OBJ_NULL;
             }
             #endif
-			//D_SOCK_PRINTF("\t[lwip_close]\n");
             int ret = lwip_close(socket->fd);
             if (ret != 0) {
                 *errcode = errno;
-				//D_SOCK_PRINTF("\t[return MP_STREAM_ERROR]\n");
                 return MP_STREAM_ERROR;
             }
             socket->fd = -1;
         }
-		//D_SOCK_PRINTF("\t[return 0]\n");
         return 0;
     }
 
     *errcode = MP_EINVAL;
-	//D_SOCK_PRINTF("[return MP_STREAM_ERROR]\n");
     return MP_STREAM_ERROR;
 }
 
