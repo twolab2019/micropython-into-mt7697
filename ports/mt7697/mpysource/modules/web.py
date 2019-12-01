@@ -46,7 +46,7 @@ def start():
         print('new ap.py')
         with open('ap.py','w') as f:
             f.write('\nmode="ap"\n')
-            f.write('ssid="MTK_UPY_AP"\n')
+            f.write('ssid="TWOLAB_UPY_AP"\n')
             f.write('pw="12345678"\n')
 
     import ap
