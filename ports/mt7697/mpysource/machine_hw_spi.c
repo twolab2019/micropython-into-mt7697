@@ -40,7 +40,6 @@
 #include "system_mt7687.h"
 #include "top.h"
 
-
 STATIC void machine_hw_spi_deinit_internal(machine_hw_spi_obj_t *self) {
 
     if (self->mode == MACHINE_HW_SPI_MASTER && HAL_SPI_MASTER_STATUS_OK != hal_spi_master_deinit(SPI_PORT_0)) {
@@ -217,7 +216,7 @@ STATIC void machine_hw_spi_print(const mp_print_t *print, mp_obj_t self_in, mp_p
 
 STATIC mp_obj_t machine_hw_spi_init(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_mode,     MP_ARG_REQUIRED|MP_ARG_INT , },
+        { MP_QSTR_mode,     MP_ARG_REQUIRED|MP_ARG_INT , {.u_int = MACHINE_HW_SPI_MASTER} },
         { MP_QSTR_baudrate, MP_ARG_INT                 , {.u_int = 1000000} },
         { MP_QSTR_polarity, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = HAL_SPI_MASTER_CLOCK_POLARITY0} },
         { MP_QSTR_phase,    MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = HAL_SPI_MASTER_CLOCK_PHASE0} },
@@ -238,7 +237,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_KW(machine_hw_spi_init_obj, 1, machine_hw_spi_ini
 
 mp_obj_t machine_hw_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_mode,     MP_ARG_REQUIRED|MP_ARG_INT , },
+        { MP_QSTR_mode,     MP_ARG_INT                 , {.u_int = MACHINE_HW_SPI_MASTER} },
         { MP_QSTR_baudrate, MP_ARG_INT                 , {.u_int = 1000000} },
         { MP_QSTR_polarity, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = HAL_SPI_MASTER_CLOCK_POLARITY0} },
         { MP_QSTR_phase,    MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = HAL_SPI_MASTER_CLOCK_PHASE0} },
@@ -246,8 +245,11 @@ mp_obj_t machine_hw_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_
         { MP_QSTR_firstbit, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = HAL_SPI_MASTER_MSB_FIRST} },
         { MP_QSTR_timeout,  MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 5000} },
     };
+    if (all_args[0] !=  MP_OBJ_NEW_SMALL_INT(0)) {
+        mp_raise_ValueError("There is only one set SPI peripheral in MT7697.Id is 0");
+    }
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
-    mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+    mp_arg_parse_all_kw_array(n_args - 1, n_kw , all_args + 1, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
     machine_hw_spi_obj_t *self = m_new_obj(machine_hw_spi_obj_t);
     self->base.type = &machine_hw_spi_type;
