@@ -8,6 +8,7 @@
 #include "py/mpthread.h"
 #include "py/mpstate.h"
 #include "py/mphal.h"
+#include "extmod/misc.h"
 #include "mphalport.h"
 #include "lib/utils/interrupt_char.h"
 
@@ -63,14 +64,11 @@ void mp_hal_stdout_tx_char(char c){
 }
 
 void mp_hal_stdout_tx_str(const char * str){
-	MP_THREAD_GIL_EXIT();
-	while(*str){
-		mp_hal_stdout_tx_char(*str++);
-	}
-	MP_THREAD_GIL_ENTER();
+	mp_hal_stdout_tx_strn(str,strlen(str));
 }
 
 void mp_hal_stdout_tx_strn(const char *str, size_t len){
+	mp_uos_dupterm_tx_strn(str,len);
 	MP_THREAD_GIL_EXIT();
 	while(len--){
 		mp_hal_stdout_tx_char(*str++);
@@ -80,11 +78,21 @@ void mp_hal_stdout_tx_strn(const char *str, size_t len){
 
 void mp_hal_stdout_tx_strn_cooked(const char *str, size_t len){
 	MP_THREAD_GIL_EXIT();
+	const char * last = str;
 	while(len--){
 		if(*str == '\n'){
-			hal_uart_put_char(MY_UART_PORT, '\r');
+			if(str > last){
+				mp_hal_stdout_tx_strn(last,str - last);
+			}
+			mp_hal_stdout_tx_strn("\r\n",2);
+			++str;
+			last = str;
+		}else{
+			++str;
 		}
-		hal_uart_put_char(MY_UART_PORT, *str++);
+	}
+	if(str>last){
+		mp_hal_stdout_tx_strn(last, str-last);
 	}
 	MP_THREAD_GIL_ENTER();
 }

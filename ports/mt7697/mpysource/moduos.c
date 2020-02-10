@@ -31,6 +31,7 @@
 #include "py/runtime.h"
 #include "py/objtuple.h"
 #include "py/objstr.h"
+#include "py/ringbuf.h"
 #include "lib/timeutils/timeutils.h"
 #include "lib/oofatfs/ff.h"
 #include "lib/oofatfs/diskio.h"
@@ -121,6 +122,20 @@ STATIC mp_obj_t uos_dupterm(size_t n_args, const mp_obj_t *args) {
 }
 
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(uos_dupterm_obj, 1, 2, uos_dupterm);
+
+extern ringbuf_t stdin_ringbuf;
+STATIC mp_obj_t os_dupterm_notify(mp_obj_t obj_in) {
+    (void)obj_in;
+    for (;;) {
+        int c = mp_uos_dupterm_rx_chr();
+        if (c < 0) {
+            break;
+        }
+        ringbuf_put(&stdin_ringbuf, c);
+    }
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(os_dupterm_notify_obj, os_dupterm_notify);
 #endif
 
 STATIC const mp_rom_map_elem_t os_module_globals_table[] = {
@@ -152,6 +167,7 @@ STATIC const mp_rom_map_elem_t os_module_globals_table[] = {
     // these are MicroPython extensions
 #if MICROPY_PY_OS_DUPTERM 
     { MP_ROM_QSTR(MP_QSTR_dupterm), MP_ROM_PTR(&uos_dupterm_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_dupterm_notify), MP_ROM_PTR(&os_dupterm_notify_obj) },
 #endif
     { MP_ROM_QSTR(MP_QSTR_mount), MP_ROM_PTR(&mp_vfs_mount_obj) },
     { MP_ROM_QSTR(MP_QSTR_umount), MP_ROM_PTR(&mp_vfs_umount_obj) },

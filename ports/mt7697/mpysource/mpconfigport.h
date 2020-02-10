@@ -78,7 +78,7 @@
 #define MICROPY_PY_BUILTINS_COMPILE (0)
 #define MICROPY_PY_BUILTINS_EXECFILE (0)
 #define MICROPY_PY_BUILTINS_NOTIMPLEMENTED (0)
-#define MICROPY_PY_BUILTINS_INPUT   (0)
+#define MICROPY_PY_BUILTINS_INPUT   (1)
 #define MICROPY_PY_BUILTINS_POW3    (0)
 #define MICROPY_PY_BUILTINS_HELP    (1)
 #define MICROPY_PY_BUILTINS_HELP_TEXT mt7697hdk_help_text
@@ -124,11 +124,17 @@
 #define MICROPY_PY_USELECT          (1)
 #define MICROPY_PY_UTIMEQ           (1)
 #define MICROPY_PY_UTIME_MP_HAL     (1)
-#define MICROPY_PY_OS_DUPTERM       (0)
+#define MICROPY_PY_OS_DUPTERM       (1)
 #define MICROPY_PY_MACHINE          (1)
 #define MICROPY_PY_MACHINE_PULSE    (1)
 #define MICROPY_PY_MACHINE_PIN_MAKE_NEW mp_pin_make_new
 #define MICROPY_PY_MACHINE_I2C      (1)
+
+#define MICROPY_PY_UWEBSOCKET       (1)
+#define MICROPY_PY_WEBREPL          (1)
+#define MICROPY_PY_USOCKET_EVENTS    (MICROPY_PY_WEBREPL)
+
+
 #if MICROPY_PY_MACHINE_I2C
 #define MICROPY_PY_MACHINE_HW_I2C   (1)
 #if MICROPY_PY_MACHINE_HW_I2C
@@ -199,6 +205,15 @@ extern const struct _mp_obj_module_t mp_module_uos;
 extern const struct _mp_obj_module_t mp_module_utime;
 extern const struct _mp_obj_module_t machine_module_network;
 extern const struct _mp_obj_module_t mp_module_usocket;
+extern const struct _mp_obj_module_t mp_module_uwebsocket;
+extern const struct _mp_obj_module_t mp_module_webrepl;
+
+#if MICROPY_PY_USOCKET_EVENTS
+#define MICROPY_PY_USOCKET_EVENTS_HANDLER extern void usocket_events_handler(void);usocket_events_handler();
+#else
+#define MICROPY_PY_USOCKET_EVENTS_HANDLER
+#endif
+
 
 #define MP_PLAT_PRINT_STRN(str, len) mp_hal_stdout_tx_strn_cooked(str, len)
 
@@ -209,6 +224,7 @@ extern const struct _mp_obj_module_t mp_module_usocket;
     do { \
         extern void mp_handle_pending(void); \
         mp_handle_pending(); \
+		MICROPY_PY_USOCKET_EVENTS_HANDLER; \
         MP_THREAD_GIL_EXIT(); \
         MP_THREAD_GIL_ENTER(); \
     } while (0);
@@ -217,13 +233,19 @@ extern const struct _mp_obj_module_t mp_module_usocket;
     do { \
         extern void mp_handle_pending(void); \
         mp_handle_pending(); \
+		MICROPY_PY_USOCKET_EVENTS_HANDLER; \
         __WFI(); \
     } while (0);
 #endif
 
 // extra built in names to add to the global namespace
 #define MICROPY_PORT_BUILTINS \
-    { MP_ROM_QSTR(MP_QSTR_open), MP_ROM_PTR(&mp_builtin_open_obj) },
+    { MP_ROM_QSTR(MP_QSTR_open), MP_ROM_PTR(&mp_builtin_open_obj) }, \
+	{ MP_OBJ_NEW_QSTR(MP_QSTR_uwebsocket), (mp_obj_t)&mp_module_uwebsocket }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR__webrepl), (mp_obj_t)&mp_module_webrepl }, \
+	{ MP_OBJ_NEW_QSTR(MP_QSTR_input), (mp_obj_t)&mp_builtin_input_obj }, \
+
+
 
 // We need to provide a declaration/definition of alloca()
 #include <alloca.h>
