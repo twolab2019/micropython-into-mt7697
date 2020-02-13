@@ -238,8 +238,6 @@ STATIC mp_obj_t machine_uart_make_new(const mp_obj_type_t *type, size_t n_args, 
         // start the peripheral
         mp_map_t kw_args;
         mp_map_init_fixed_table(&kw_args, n_kw, args + n_args);
-        printf("uart_id = %d\n", self->uart_id);
-        //printf("0 rate = %d\n", mp_obj_get_int(args[1]));
         machine_uart_init_helper(self, n_args , args, &kw_args);
     }
 
@@ -247,7 +245,6 @@ STATIC mp_obj_t machine_uart_make_new(const mp_obj_type_t *type, size_t n_args, 
 }
 
 STATIC mp_obj_t machine_uart_init(size_t n_args, const mp_obj_t *args, mp_map_t *kw_args) {
-    printf("n_args = %d \n", n_args);
     return machine_uart_init_helper(MP_OBJ_TO_PTR(args[0]), n_args -1 , args + 1, kw_args);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_KW(machine_uart_init_obj, 1, machine_uart_init);
