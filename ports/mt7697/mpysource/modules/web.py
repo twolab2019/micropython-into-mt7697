@@ -44,10 +44,7 @@ def start():
         f.close()
     except:
         print('new ap.py')
-        with open('ap.py','w') as f:
-            f.write('\nmode="ap"\n')
-            f.write('ssid="TWOLAB_UPY_AP"\n')
-            f.write('pw="12345678"\n')
+        mode('ap','TWOLAB_UPY_AP','12345678')
 
     import ap
     if ap:
@@ -60,4 +57,20 @@ def start():
     elif mode == "sta":
         sta_init()
 
+
+def mode(mode,ssid,pw):
+    try:
+        uos.remove('ap.py')
+    except:
+        pass
+    with open('ap.py','w') as f:
+        f.write('\nmode="' + mode + '"\n')
+        f.write('ssid="' +  ssid + '"\n')
+        f.write('pw="' + pw + '"\n')
+
+def ap(ssid,pw):
+    mode('ap',ssid,pw)
+        
+def sta(ssid,pw):
+    mode('sta',ssid,pw)
 
