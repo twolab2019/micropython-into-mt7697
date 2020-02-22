@@ -7,16 +7,18 @@ wlan = None
 def ap_init():
     global wlan
     import ap
-    ssid = ap.ssid
-    pw = ap.pw
-    print('start ap mode...[ip:10.10.10.1]')
-    print('ssid: ' + ssid)
-    print('pw: ' + pw)
-    wlan = network.WLAN(network.AP_IF)
-    wlan.ssid(ssid)
-    wlan.auth((network.WPA2,pw))
-    wlan.connect()
-    return wlan
+    if ap.mode == 'ap':
+        ssid = ap.ssid
+        pw = ap.pw
+        print('start ap mode...[ip:10.10.10.1]')
+        print('ssid: ' + ssid)
+        print('pw: ' + pw)
+        wlan = network.WLAN(network.AP_IF)
+        wlan.ssid(ssid)
+        wlan.auth((network.WPA2,pw))
+        wlan.connect()
+        return wlan
+    sta_init()
 
 def sta_init():
     global wlan

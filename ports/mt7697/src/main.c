@@ -228,7 +228,26 @@ void mp_task(void *pvParameters)
     // Create it if needed, mount in on /flash, and set it as current dir.
     bool mounted_flash = false;
     #if MICROPY_HW_ENABLE_STORAGE
-	uint reset_mode = 0;
+	/*
+     * initialize the local flash filesystem
+     * create it if needed, mount in on /flash, and set it as current dir
+     * GPIO_27 == Pin8
+     * */
+    uint reset_mode = 0;
+    {
+        hal_gpio_data_t _v;
+        hal_gpio_init(HAL_GPIO_27);
+        hal_pinmux_set_function(HAL_GPIO_27, HAL_GPIO_27_GPIO27);
+        hal_gpio_set_direction(HAL_GPIO_27, HAL_GPIO_DIRECTION_INPUT);
+        hal_gpio_pull_up(HAL_GPIO_27);
+        hal_gpio_get_input(HAL_GPIO_27,&_v);
+        if(_v == HAL_GPIO_DATA_LOW) {
+            reset_mode = 3;
+            printf("[RESET MODE][%u]\r\n", reset_mode);
+        }
+        hal_gpio_deinit(HAL_GPIO_27);
+    };
+	
     mounted_flash = init_flash_fs(reset_mode);
     #endif
 

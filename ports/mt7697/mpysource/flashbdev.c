@@ -127,8 +127,13 @@ static bool _flash_bdev_sync(){
 
 bool flash_bdev_readblock(uint8_t *dest, uint32_t block) {
     uint32_t flash_addr = convert_block_to_flash_addr(block);
+    uint32_t base_addr_start = flash_addr & ~((uint32_t)0xfff);
+    uint32_t index_start = flash_addr - base_addr_start;
 
-	if(HAL_FLASH_STATUS_OK != hal_flash_read(flash_addr, dest, FLASH_BLOCK_SIZE)){
+	if(base_addr_start == _flash_cached_region_start_addr){
+		memcpy(dest,(uint8_t*)(_flash_buff + index_start), FLASH_BLOCK_SIZE);
+		return true;
+	}else if(HAL_FLASH_STATUS_OK != hal_flash_read(flash_addr, dest, FLASH_BLOCK_SIZE)){
 		printf("[flash bdev readblock:%lu][error]\r\n",block);
 		return false;
 	}
