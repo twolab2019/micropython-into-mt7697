@@ -189,6 +189,9 @@ CFLAGS += -I$(SOURCE_DIR)/driver/CMSIS/Device/MTK/mt7687/Include
 CFLAGS += -I$(SOURCE_DIR)/driver/board/linkit7697_hdk/ept/inc
 CFLAGS += -I$(SOURCE_DIR)/driver/board/linkit7697_hdk/external_flash/driver/board/linkit7697_hdk/external_flash/inc
 
+# -DNDEBUG
+CFLAGS += -DNDEBUG
+
 # BLE include path
 CFLAGS += -D__BT_DEBUG__
 CFLAGS += -I$(APP_PATH)/src/ut_app
