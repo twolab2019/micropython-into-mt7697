@@ -73,10 +73,10 @@
 fs_user_mount_t fs_user_mount_flash;
 
 // -- 16k bytes for stack size of freeRTOS task--
-#define MP_TASK_STACK_SIZE    (20 * 1024)
+#define MP_TASK_STACK_SIZE    (25 * 1024)
 #define MP_TASK_STACK_LEN     (MP_TASK_STACK_SIZE / sizeof(StackType_t))
 
-static char heap[20*1024];
+static char heap[25*1024];
 static char *stack_top;
 extern uint32_t __StackTop;
 extern uint32_t __StackLimit;
@@ -227,6 +227,7 @@ void mp_task(void *pvParameters)
     // Initialise the local flash filesystem.
     // Create it if needed, mount in on /flash, and set it as current dir.
     bool mounted_flash = false;
+
     #if MICROPY_HW_ENABLE_STORAGE
 	/*
      * initialize the local flash filesystem
@@ -235,23 +236,45 @@ void mp_task(void *pvParameters)
      * */
     uint reset_mode = 0;
     {
-        hal_gpio_data_t _v;
+        hal_gpio_data_t pin8, pin6;
+
         hal_gpio_init(HAL_GPIO_27);
+        hal_gpio_init(HAL_GPIO_37);
+
         hal_pinmux_set_function(HAL_GPIO_27, HAL_GPIO_27_GPIO27);
+        hal_pinmux_set_function(HAL_GPIO_37, HAL_GPIO_37_GPIO37);
+
         hal_gpio_set_direction(HAL_GPIO_27, HAL_GPIO_DIRECTION_INPUT);
+        hal_gpio_set_direction(HAL_GPIO_37, HAL_GPIO_DIRECTION_INPUT);
+
         hal_gpio_pull_up(HAL_GPIO_27);
-        hal_gpio_get_input(HAL_GPIO_27,&_v);
-        if(_v == HAL_GPIO_DATA_LOW) {
-            reset_mode = 3;
-            printf("[RESET MODE][%u]\r\n", reset_mode);
-        }
+        hal_gpio_pull_down(HAL_GPIO_37);
+
+        printf("If you want to format VFS, please pin8 connect low voltage and push the USR button for waiting two seconds \n");
+        printf("If you want to skip the process of  main.py and boot.py, pin8 connect hight voltage and push the USR button for waiting two seconds.\n");
+
+        hal_gpt_delay_ms(2000);
+        hal_gpio_get_input(HAL_GPIO_27,&pin8);
+        hal_gpio_get_input(HAL_GPIO_37,&pin6);
+
+        if (pin8 == HAL_GPIO_DATA_LOW)
+            reset_mode |= 1;
+
+        if (pin6 != HAL_GPIO_DATA_LOW)
+            reset_mode |= 2;
+
+        printf("[RESET MODE][%u]\r\n", reset_mode);
         hal_gpio_deinit(HAL_GPIO_27);
+        hal_gpio_deinit(HAL_GPIO_37);
     };
-	
+
     mounted_flash = init_flash_fs(reset_mode);
     #endif
 
-    if (mounted_flash && (pyexec_mode_kind == PYEXEC_MODE_FRIENDLY_REPL)) {
+    if (reset_mode == 2)
+        printf("skip main.py and boot.py\n");
+
+    if (mounted_flash && (pyexec_mode_kind == PYEXEC_MODE_FRIENDLY_REPL) && (reset_mode != 2)) {
         mp_import_stat_t stat = mp_import_stat("/flash/boot.py");
         if (stat == MP_IMPORT_STAT_FILE)
             pyexec_file("/flash/boot.py");
