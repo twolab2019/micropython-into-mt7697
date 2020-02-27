@@ -99,15 +99,35 @@ static const char fresh_boot_py[] =
 ;
 
 static const char fresh_main_py[] =
-"# main.py -- put your code here!\r\n"
+"# main.py -- put your code here!\n"
+"import utime\n"
+"import gc\n"
+"import uos\n"
+"\n\n"
+"def H2S(hexValue):\n"
+"    return ''.join(chr(int(hexValue[i:i+2], 16)) for i in range(0, len(hexValue),2))\n"
+"\n\n"
+"if __name__ == '__main__':\n"
+"    fileList = uos.listdir()\n"
+"    if 'subFunction' in fileList:\n"
+"        import subFunction\n"
+"        subFunction.setup()\n"
+"\n"
+"        while True:\n"
+"           subFunction.loop()\n"
+"    else:\n"
+"       print(\"Don't have subFunction.py\")\n"
+"\n"
 ;
 
 static const char fresh_readme_txt[] =
-"This is a Liniit 7697 HDK board with MicroPython.\r\n"
-" Author : onionys@gmail.com and tomlin690@gmail.com\r\n"
-"\r\n"
-"You can get started right away by writing your Python code in 'main.py'.\r\n"
-"\r\n"
+"We are from 'Two Labs'.\r\n We port the MicroPython into MT7697 SoC of Mediatek.\n"
+"Author : \n"
+"        onionys@gmail.com\n"
+"        tomlin.ntust@gmail.com\n"
+"\n"
+"You can get started right away by writing your Python code in 'main.py'.\n"
+"\n"
 ;
 
 // avoid inlining to avoid stack usage within main()
@@ -182,14 +202,34 @@ MP_NOINLINE STATIC bool init_flash_fs(uint reset_mode) {
 
     // Make sure we have a /flash/boot.py.  Create it if needed.
     FILINFO fno;
+    FIL fp;
+    UINT n;
+    res = f_stat(&vfs_fat->fatfs, "/README.txt", &fno);
+    if (res != FR_OK) {
+        // doesn't exist, create  README.txt file
+		LOG_I(template, "[fs file][create /README.txt]");
+        f_open(&vfs_fat->fatfs, &fp, "/README.txt", FA_WRITE | FA_CREATE_ALWAYS);
+        f_write(&fp, fresh_readme_txt, sizeof(fresh_readme_txt) - 1 /* don't count null terminator */, &n);
+        // TODO check we could write n bytes
+        f_close(&fp);
+    }
+
     res = f_stat(&vfs_fat->fatfs, "/boot.py", &fno);
     if (res != FR_OK) {
         // doesn't exist, create fresh file
 		LOG_I(template, "[fs file][create /boot.py]");
-        FIL fp;
         f_open(&vfs_fat->fatfs, &fp, "/boot.py", FA_WRITE | FA_CREATE_ALWAYS);
-        UINT n;
         f_write(&fp, fresh_boot_py, sizeof(fresh_boot_py) - 1 /* don't count null terminator */, &n);
+        // TODO check we could write n bytes
+        f_close(&fp);
+    }
+
+    res = f_stat(&vfs_fat->fatfs, "/main.py", &fno);
+    if (res != FR_OK) {
+        // doesn't exist, create  main.py file
+		LOG_I(template, "[fs file][create /main.py]");
+        f_open(&vfs_fat->fatfs, &fp, "/main.py", FA_WRITE | FA_CREATE_ALWAYS);
+        f_write(&fp, fresh_main_py, sizeof(fresh_main_py) - 1 /* don't count null terminator */, &n);
         // TODO check we could write n bytes
         f_close(&fp);
     }
