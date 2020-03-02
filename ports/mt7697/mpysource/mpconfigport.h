@@ -16,24 +16,24 @@
 #define MICROPY_ALLOC_PATH_MAX      (128)
 
 // emitters
-#define MICROPY_PERSISTENT_CODE_LOAD (0)
+#define MICROPY_PERSISTENT_CODE_LOAD (1)
 #ifndef MICROPY_EMIT_THUMB
-#define MICROPY_EMIT_THUMB          (0)
+#define MICROPY_EMIT_THUMB          (1)
 #endif
 #ifndef MICROPY_EMIT_INLINE_THUMB
 #define MICROPY_EMIT_INLINE_THUMB   (0)
 #endif
 
 // compiler configuration
-#define MICROPY_COMP_MODULE_CONST   (0)
-#define MICROPY_COMP_TRIPLE_TUPLE_ASSIGN (0)
-#define MICROPY_COMP_RETURN_IF_EXPR (0)
+#define MICROPY_COMP_MODULE_CONST   (1)
+#define MICROPY_COMP_TRIPLE_TUPLE_ASSIGN (1)
+#define MICROPY_COMP_RETURN_IF_EXPR (1)
 
 // optimisations
-#define MICROPY_OPT_COMPUTED_GOTO   (0)
-#define MICROPY_OPT_CACHE_MAP_LOOKUP_IN_BYTECODE (0)
-#define MICROPY_OPT_MPZ_BITWISE     (0)
-#define MICROPY_OPT_MATH_FACTORIAL  (0)
+#define MICROPY_OPT_COMPUTED_GOTO   (1)
+#define MICROPY_OPT_CACHE_MAP_LOOKUP_IN_BYTECODE (1)
+#define MICROPY_OPT_MPZ_BITWISE     (1)
+#define MICROPY_OPT_MATH_FACTORIAL  (1)
 
 // Python internal features
 #define MICROPY_READER_VFS          (1)
@@ -63,27 +63,27 @@
 #endif
 
 // control over Python builtins
-#define MICROPY_PY_FUNCTION_ATTRS   (0)
-#define MICROPY_PY_DESCRIPTORS      (0)
-#define MICROPY_PY_DELATTR_SETATTR  (0)
-#define MICROPY_PY_BUILTINS_STR_UNICODE (0)
-#define MICROPY_PY_BUILTINS_STR_CENTER (0)
-#define MICROPY_PY_BUILTINS_STR_PARTITION (0)
-#define MICROPY_PY_BUILTINS_STR_SPLITLINES (0)
-#define MICROPY_PY_BUILTINS_MEMORYVIEW (0)
-#define MICROPY_PY_BUILTINS_FROZENSET (0)
-#define MICROPY_PY_BUILTINS_SLICE_ATTRS (0)
-#define MICROPY_PY_BUILTINS_ROUND_INT (0)
-#define MICROPY_PY_ALL_SPECIAL_METHODS (0)
-#define MICROPY_PY_BUILTINS_COMPILE (0)
-#define MICROPY_PY_BUILTINS_EXECFILE (0)
-#define MICROPY_PY_BUILTINS_NOTIMPLEMENTED (0)
+#define MICROPY_PY_FUNCTION_ATTRS   (1)
+#define MICROPY_PY_DESCRIPTORS      (1)
+#define MICROPY_PY_DELATTR_SETATTR  (1)
+#define MICROPY_PY_BUILTINS_STR_UNICODE (1)
+#define MICROPY_PY_BUILTINS_STR_CENTER (1)
+#define MICROPY_PY_BUILTINS_STR_PARTITION (1)
+#define MICROPY_PY_BUILTINS_STR_SPLITLINES (1)
+#define MICROPY_PY_BUILTINS_MEMORYVIEW (1)
+#define MICROPY_PY_BUILTINS_FROZENSET (1)
+#define MICROPY_PY_BUILTINS_SLICE_ATTRS (1)
+#define MICROPY_PY_BUILTINS_ROUND_INT (1)
+#define MICROPY_PY_ALL_SPECIAL_METHODS (1)
+#define MICROPY_PY_BUILTINS_COMPILE (1)
+#define MICROPY_PY_BUILTINS_EXECFILE (1)
+#define MICROPY_PY_BUILTINS_NOTIMPLEMENTED (1)
 #define MICROPY_PY_BUILTINS_INPUT   (1)
 #define MICROPY_PY_BUILTINS_POW3    (0)
 #define MICROPY_PY_BUILTINS_HELP    (1)
 #define MICROPY_PY_BUILTINS_HELP_TEXT mt7697hdk_help_text
-#define MICROPY_PY_BUILTINS_HELP_MODULES (0)
-#define MICROPY_PY_MICROPYTHON_MEM_INFO (0)
+#define MICROPY_PY_BUILTINS_HELP_MODULES (1)
+#define MICROPY_PY_MICROPYTHON_MEM_INFO (1)
 #define MICROPY_PY_ARRAY_SLICE_ASSIGN (1)
 #define MICROPY_PY_ARRAY              (1)
 #define MICROPY_PY_COLLECTIONS       (1)
@@ -129,12 +129,6 @@
 #define MICROPY_PY_MACHINE_PULSE    (1)
 #define MICROPY_PY_MACHINE_PIN_MAKE_NEW mp_pin_make_new
 #define MICROPY_PY_MACHINE_I2C      (1)
-
-#define MICROPY_PY_UWEBSOCKET       (1)
-#define MICROPY_PY_WEBREPL          (1)
-#define MICROPY_PY_USOCKET_EVENTS    (MICROPY_PY_WEBREPL)
-
-
 #if MICROPY_PY_MACHINE_I2C
 #define MICROPY_PY_MACHINE_HW_I2C   (1)
 #if MICROPY_PY_MACHINE_HW_I2C
@@ -164,6 +158,9 @@
 #define MICROPY_PY_NETWORK          (0)
 #endif
 
+#define MICROPY_PY_UWEBSOCKET       (1)
+#define MICROPY_PY_WEBREPL          (1)
+#define MICROPY_PY_USOCKET_EVENTS    (MICROPY_PY_WEBREPL)
 // TODO these should be generic, not bound to fatfs
 #define mp_type_fileio mp_type_vfs_fat_fileio
 #define mp_type_textio mp_type_vfs_fat_textio
@@ -214,7 +211,6 @@ extern const struct _mp_obj_module_t mp_module_webrepl;
 #define MICROPY_PY_USOCKET_EVENTS_HANDLER
 #endif
 
-
 #define MP_PLAT_PRINT_STRN(str, len) mp_hal_stdout_tx_strn_cooked(str, len)
 
 #include "FreeRTOS.h"
@@ -224,7 +220,7 @@ extern const struct _mp_obj_module_t mp_module_webrepl;
     do { \
         extern void mp_handle_pending(void); \
         mp_handle_pending(); \
-		MICROPY_PY_USOCKET_EVENTS_HANDLER; \
+        MICROPY_PY_USOCKET_EVENTS_HANDLER; \
         MP_THREAD_GIL_EXIT(); \
         MP_THREAD_GIL_ENTER(); \
     } while (0);
@@ -233,7 +229,7 @@ extern const struct _mp_obj_module_t mp_module_webrepl;
     do { \
         extern void mp_handle_pending(void); \
         mp_handle_pending(); \
-		MICROPY_PY_USOCKET_EVENTS_HANDLER; \
+        MICROPY_PY_USOCKET_EVENTS_HANDLER; \
         __WFI(); \
     } while (0);
 #endif
@@ -241,9 +237,9 @@ extern const struct _mp_obj_module_t mp_module_webrepl;
 // extra built in names to add to the global namespace
 #define MICROPY_PORT_BUILTINS \
     { MP_ROM_QSTR(MP_QSTR_open), MP_ROM_PTR(&mp_builtin_open_obj) }, \
-	{ MP_OBJ_NEW_QSTR(MP_QSTR_uwebsocket), (mp_obj_t)&mp_module_uwebsocket }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_uwebsocket), (mp_obj_t)&mp_module_uwebsocket }, \
     { MP_OBJ_NEW_QSTR(MP_QSTR__webrepl), (mp_obj_t)&mp_module_webrepl }, \
-	{ MP_OBJ_NEW_QSTR(MP_QSTR_input), (mp_obj_t)&mp_builtin_input_obj }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_input), (mp_obj_t)&mp_builtin_input_obj }, \
 
 
 
