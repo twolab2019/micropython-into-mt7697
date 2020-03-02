@@ -107,7 +107,7 @@
 /* MEM_SIZE: the size of the heap memory. If the application will send
 a lot of data that needs to be copied, this should be set high. */
 #if defined(MTK_WIFI_TGN_VERIFY_ENABLE) && !defined(MTK_HOMEKIT_ENABLE)
-#define MEM_SIZE                (100 * 1024)
+#define MEM_SIZE                (120 * 1024)
 #else
 #define MEM_SIZE                (36 * 1024)
 #endif

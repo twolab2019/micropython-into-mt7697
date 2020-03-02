@@ -100,7 +100,7 @@ extern uint32_t SystemCoreClock;
 #define configMINIMAL_STACK_SIZE        ( ( unsigned short ) 256 )
 /*This option is to enable homekit under middleware/MTK/homekit folder. If the MTK_HOMEKIT_ENABLE compile option is defined, the sources and header files under middleware/MTK/homekit/inc be included by middleware/MTK/homekit/MakeFile.*/
 #if defined(MTK_HOMEKIT_ENABLE)
-#define configTOTAL_HEAP_SIZE           ( ( size_t ) ( 140 * 1024 ) )
+#define configTOTAL_HEAP_SIZE           ( ( size_t ) ( 134 * 1024 ) )
 #else
 #define configTOTAL_HEAP_SIZE           ( ( size_t ) ( 80 * 1024 ) )
 #endif

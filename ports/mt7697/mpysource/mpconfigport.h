@@ -21,7 +21,7 @@
 #define MICROPY_EMIT_THUMB          (1)
 #endif
 #ifndef MICROPY_EMIT_INLINE_THUMB
-#define MICROPY_EMIT_INLINE_THUMB   (0)
+#define MICROPY_EMIT_INLINE_THUMB   (1)
 #endif
 
 // compiler configuration
@@ -115,11 +115,11 @@
 #define MICROPY_PY_UHEAPQ           (1)
 #define MICROPY_PY_UHASHLIB         (1)
 #define MICROPY_PY_UHASHLIB_SHA1    (1)
-#define MICROPY_PY_UHASHLIB_SHA256          (1)
-#define MICROPY_PY_UHASHLIB_MD5             (1)
+#define MICROPY_PY_UHASHLIB_SHA256          (0)
+#define MICROPY_PY_UHASHLIB_MD5             (0)
 #define MICROPY_PY_UCRYPTOLIB               (0)
 #define MICROPY_PY_UBINASCII        (1)
-#define MICROPY_PY_URANDOM          (0)
+#define MICROPY_PY_URANDOM          (1)
 #define MICROPY_PY_URANDOM_EXTRA_FUNCS (0)
 #define MICROPY_PY_USELECT          (1)
 #define MICROPY_PY_UTIMEQ           (1)
